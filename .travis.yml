@@ -51,6 +51,20 @@ install:
 
 script:
   - bash .travis.sh travis_script
-
-after_success:
-  - bash .travis.sh travis_after_success
+  - ls -al
+after_success: 
+  - ls -al artifacts/
+  - wget -c https://github.com/tcnksm/ghr/releases/download/v0.13.0/ghr_v0.13.0_linux_amd64.tar.gz
+  - tar xfv ghr_v0.13.0_linux_amd64.tar.gz
+  - ghr_v0.13.0_linux_amd64/ghr -recreate -n 'Continous build' -b "Travis CI build log ${TRAVIS_BUILD_WEB_URL}" continuous artifacts/
+branches: 
+  except: 
+    - /^(?i:continuous.*)$/
+deploy: 
+  api_key: $GITHUB_TOKEN
+  file: artifacts/*
+  file_glob: true
+  provider: releases
+  skip_cleanup: true
+  true: 
+    tags: true
