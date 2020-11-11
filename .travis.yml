@@ -16,6 +16,7 @@ addons:
       - libgl1-mesa-dev
       - libglu1-mesa-dev
       - libsdl2-dev
+      - p7zip
       - pv
       - software-properties-common
     sources:
@@ -53,6 +54,8 @@ script:
   - bash .travis.sh travis_script
   - mkdir artifacts/
   - cp build/PPSSPPSDL artifacts/
+  - 7z a assets.zip build/assets 
+  - cp build/assets.zip artifacts/
   - ls -al build/
 after_success: 
   - ls -al artifacts/
