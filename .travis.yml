@@ -16,7 +16,7 @@ addons:
       - libgl1-mesa-dev
       - libglu1-mesa-dev
       - libsdl2-dev
-      - p7zip
+      - p7zip-full
       - pv
       - software-properties-common
     sources:
