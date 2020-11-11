@@ -52,6 +52,7 @@ install:
 script:
   - bash .travis.sh travis_script
   - mkdir artifacts/
+  - cp build/PPSSPPSDL artifacts/
   - ls -al build/
 after_success: 
   - ls -al artifacts/
