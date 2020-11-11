@@ -55,7 +55,7 @@ script:
   - mkdir artifacts/
   - cp build/PPSSPPSDL artifacts/
   - 7z a assets.zip build/assets 
-  - cp build/assets.zip artifacts/
+  - cp assets.zip artifacts/
   - ls -al build/
 after_success: 
   - ls -al artifacts/
