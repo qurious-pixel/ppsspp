@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <map>
 
+#include "ppsspp_config.h"
+
 #include "Common/Data/Convert/SmallDataConvert.h"
 #include "Common/Math/math_util.h"
 #include "Common/Math/lin/matrix4x4.h"
@@ -134,25 +136,6 @@ static const unsigned short primToGL[] = {
 	GL_TRIANGLES,
 	GL_TRIANGLE_STRIP,
 	GL_TRIANGLE_FAN,
-#if !defined(USING_GLES2)   // TODO: Remove when we have better headers
-	GL_PATCHES,
-	GL_LINES_ADJACENCY,
-	GL_LINE_STRIP_ADJACENCY,
-	GL_TRIANGLES_ADJACENCY,
-	GL_TRIANGLE_STRIP_ADJACENCY,
-#elif !defined(IOS)
-	GL_POINTS,
-	GL_POINTS,
-	GL_POINTS,
-	GL_POINTS,
-	GL_POINTS,
-#else
-	GL_POINTS,
-	GL_POINTS,
-	GL_POINTS,
-	GL_POINTS,
-	GL_POINTS,
-#endif
 };
 
 class OpenGLBuffer;
@@ -380,7 +363,9 @@ public:
 
 	// These functions should be self explanatory.
 	void BindFramebufferAsRenderTarget(Framebuffer *fbo, const RenderPassInfo &rp, const char *tag) override;
-	// color must be 0, for now.
+	Framebuffer *GetCurrentRenderTarget() override {
+		return curRenderTarget_;
+	}
 	void BindFramebufferAsTexture(Framebuffer *fbo, int binding, FBChannel channelBit, int attachment) override;
 
 	void GetFramebufferDimensions(Framebuffer *fbo, int *w, int *h) override;
@@ -459,6 +444,7 @@ public:
 				case GPUVendor::VENDOR_ARM: return "VENDOR_ARM";
 				case GPUVendor::VENDOR_BROADCOM: return "VENDOR_BROADCOM";
 				case GPUVendor::VENDOR_VIVANTE: return "VENDOR_VIVANTE";
+				case GPUVendor::VENDOR_APPLE: return "VENDOR_APPLE";
 				case GPUVendor::VENDOR_UNKNOWN:
 				default:
 					return "VENDOR_UNKNOWN";
@@ -506,6 +492,7 @@ private:
 	int curVBufferOffsets_[4]{};
 	OpenGLBuffer *curIBuffer_ = nullptr;
 	int curIBufferOffset_ = 0;
+	Framebuffer *curRenderTarget_ = nullptr;
 
 	uint8_t stencilRef_ = 0;
 
@@ -560,6 +547,7 @@ OpenGLContext::OpenGLContext() {
 	case GPU_VENDOR_INTEL: caps_.vendor = GPUVendor::VENDOR_INTEL; break;
 	case GPU_VENDOR_IMGTEC: caps_.vendor = GPUVendor::VENDOR_IMGTEC; break;
 	case GPU_VENDOR_VIVANTE: caps_.vendor = GPUVendor::VENDOR_VIVANTE; break;
+	case GPU_VENDOR_APPLE: caps_.vendor = GPUVendor::VENDOR_APPLE; break;
 	case GPU_VENDOR_UNKNOWN:
 	default:
 		caps_.vendor = GPUVendor::VENDOR_UNKNOWN;
@@ -605,14 +593,24 @@ OpenGLContext::OpenGLContext() {
 		bugs_.Infest(Bugs::PVR_GENMIPMAP_HEIGHT_GREATER);
 	}
 
+#if PPSSPP_PLATFORM(IOS)
+	// For some reason, this bug does not appear on M1.
+	if (caps_.vendor == GPUVendor::VENDOR_APPLE) {
+		bugs_.Infest(Bugs::BROKEN_FLAT_IN_SHADER);
+	}
+#endif
+
 	shaderLanguageDesc_.Init(GLSL_1xx);
 
+	shaderLanguageDesc_.glslVersionNumber = gl_extensions.GLSLVersion();
+
+	snprintf(shaderLanguageDesc_.driverInfo, sizeof(shaderLanguageDesc_.driverInfo),
+		"%s - GLSL %d", gl_extensions.model, gl_extensions.GLSLVersion());
 	// Detect shader language features.
 	if (gl_extensions.IsGLES) {
 		shaderLanguageDesc_.gles = true;
 		if (gl_extensions.GLES3) {
 			shaderLanguageDesc_.shaderLanguage = ShaderLanguage::GLSL_3xx;
-			shaderLanguageDesc_.glslVersionNumber = 300;  // GLSL ES 3.0
 			shaderLanguageDesc_.fragColor0 = "fragColor0";
 			shaderLanguageDesc_.texture = "texture";
 			shaderLanguageDesc_.glslES30 = true;
@@ -623,7 +621,6 @@ OpenGLContext::OpenGLContext() {
 			shaderLanguageDesc_.attribute = "in";
 		} else {
 			shaderLanguageDesc_.shaderLanguage = ShaderLanguage::GLSL_1xx;
-			shaderLanguageDesc_.glslVersionNumber = 100;  // GLSL ES 1.0
 			if (gl_extensions.EXT_gpu_shader4) {
 				shaderLanguageDesc_.bitwiseOps = true;
 				shaderLanguageDesc_.texelFetch = "texelFetch2D";
@@ -634,33 +631,28 @@ OpenGLContext::OpenGLContext() {
 			}
 		}
 	} else {
-		if (gl_extensions.IsCoreContext) {
-			if (gl_extensions.VersionGEThan(3, 3, 0)) {
-				shaderLanguageDesc_.shaderLanguage = ShaderLanguage::GLSL_3xx;
-				shaderLanguageDesc_.glslVersionNumber = 330;
-				shaderLanguageDesc_.fragColor0 = "fragColor0";
-				shaderLanguageDesc_.texture = "texture";
-				shaderLanguageDesc_.glslES30 = true;
+		// I don't know why we were checking for IsCoreContext here before.
+		if (gl_extensions.VersionGEThan(3, 3, 0)) {
+			shaderLanguageDesc_.shaderLanguage = ShaderLanguage::GLSL_3xx;
+			shaderLanguageDesc_.fragColor0 = "fragColor0";
+			shaderLanguageDesc_.texture = "texture";
+			shaderLanguageDesc_.glslES30 = true;
+			shaderLanguageDesc_.bitwiseOps = true;
+			shaderLanguageDesc_.texelFetch = "texelFetch";
+			shaderLanguageDesc_.varying_vs = "out";
+			shaderLanguageDesc_.varying_fs = "in";
+			shaderLanguageDesc_.attribute = "in";
+		} else if (gl_extensions.VersionGEThan(3, 0, 0)) {
+			shaderLanguageDesc_.shaderLanguage = ShaderLanguage::GLSL_1xx;
+			shaderLanguageDesc_.fragColor0 = "fragColor0";
+			shaderLanguageDesc_.bitwiseOps = true;
+			shaderLanguageDesc_.texelFetch = "texelFetch";
+		} else {
+			// This too...
+			shaderLanguageDesc_.shaderLanguage = ShaderLanguage::GLSL_1xx;
+			if (gl_extensions.EXT_gpu_shader4) {
 				shaderLanguageDesc_.bitwiseOps = true;
-				shaderLanguageDesc_.texelFetch = "texelFetch";
-				shaderLanguageDesc_.varying_vs = "out";
-				shaderLanguageDesc_.varying_fs = "in";
-				shaderLanguageDesc_.attribute = "in";
-			} else if (gl_extensions.VersionGEThan(3, 0, 0)) {
-				// Hm, I think this is wrong. This should be outside "if (gl_extensions.IsCoreContext)".
-				shaderLanguageDesc_.shaderLanguage = ShaderLanguage::GLSL_1xx;
-				shaderLanguageDesc_.glslVersionNumber = 130;
-				shaderLanguageDesc_.fragColor0 = "fragColor0";
-				shaderLanguageDesc_.bitwiseOps = true;
-				shaderLanguageDesc_.texelFetch = "texelFetch";
-			} else {
-				// This too...
-				shaderLanguageDesc_.shaderLanguage = ShaderLanguage::GLSL_1xx;
-				shaderLanguageDesc_.glslVersionNumber = 110;
-				if (gl_extensions.EXT_gpu_shader4) {
-					shaderLanguageDesc_.bitwiseOps = true;
-					shaderLanguageDesc_.texelFetch = "texelFetch2D";
-				}
+				shaderLanguageDesc_.texelFetch = "texelFetch2D";
 			}
 		}
 	}
@@ -1340,6 +1332,7 @@ void OpenGLContext::BindFramebufferAsRenderTarget(Framebuffer *fbo, const Render
 	GLRRenderPassAction stencil = (GLRRenderPassAction)rp.stencil;
 
 	renderManager_.BindFramebufferAsRenderTarget(fb ? fb->framebuffer_ : nullptr, color, depth, stencil, rp.clearColor, rp.clearDepth, rp.clearStencil, tag);
+	curRenderTarget_ = fb;
 }
 
 void OpenGLContext::CopyFramebufferImage(Framebuffer *fbsrc, int srcLevel, int srcX, int srcY, int srcZ, Framebuffer *fbdst, int dstLevel, int dstX, int dstY, int dstZ, int width, int height, int depth, int channelBits, const char *tag) {

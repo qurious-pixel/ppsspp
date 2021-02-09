@@ -22,6 +22,7 @@
 #include "Common/StringUtils.h"
 #include "Common/GPU/OpenGL/GLFeatures.h"
 #include "Common/GPU/ShaderWriter.h"
+#include "Common/GPU/thin3d.h"
 #include "Core/Config.h"
 #include "GPU/ge_constants.h"
 #include "GPU/GPUState.h"
@@ -126,7 +127,7 @@ static const char * const boneWeightDecl[9] = {
 extern const char *vulkan_glsl_preamble_vs;
 extern const char *hlsl_preamble_vs;
 
-bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguageDesc &compat, uint32_t *attrMask, uint64_t *uniformMask, std::string *errorString) {
+bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguageDesc &compat, Draw::Bugs bugs, uint32_t *attrMask, uint64_t *uniformMask, std::string *errorString) {
 	*attrMask = 0;
 	*uniformMask = 0;
 
@@ -151,7 +152,9 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 	// this is only valid for some settings of uvGenMode
 	GETexProjMapMode uvProjMode = static_cast<GETexProjMapMode>(id.Bits(VS_BIT_UVPROJ_MODE, 2));
 	bool doShadeMapping = uvGenMode == GE_TEXMAP_ENVIRONMENT_MAP;
-	bool doFlatShading = id.Bit(VS_BIT_FLATSHADE);
+
+	bool flatBug = bugs.Has(Draw::Bugs::BROKEN_FLAT_IN_SHADER) && g_Config.bVendorBugChecksEnabled;
+	bool doFlatShading = id.Bit(VS_BIT_FLATSHADE) && !flatBug;
 
 	bool useHWTransform = id.Bit(VS_BIT_USE_HW_TRANSFORM);
 	bool hasColor = id.Bit(VS_BIT_HAS_COLOR) || !useHWTransform;
@@ -207,6 +210,8 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 	}
 	bool texCoordInVec3 = false;
 
+	bool vertexRangeCulling = id.Bit(VS_BIT_VERTEX_RANGE_CULLING);
+
 	if (compat.shaderLanguage == GLSL_VULKAN) {
 		WRITE(p, "\n");
 		WRITE(p, "layout (std140, set = 0, binding = 3) uniform baseVars {\n%s};\n", ub_baseStr);
@@ -241,18 +246,18 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 				WRITE(p, "layout (location = %d) in vec3 color1;\n", (int)PspAttributeLocation::COLOR1);
 		}
 
-		WRITE(p, "layout (location = 1) %sout vec4 v_color0;\n", shading);
+		WRITE(p, "layout (location = 1) %sout lowp vec4 v_color0;\n", shading);
 		if (lmode) {
-			WRITE(p, "layout (location = 2) %sout vec3 v_color1;\n", shading);
+			WRITE(p, "layout (location = 2) %sout lowp vec3 v_color1;\n", shading);
 		}
 
 		if (doTexture) {
-			WRITE(p, "layout (location = 0) out vec3 v_texcoord;\n");
+			WRITE(p, "layout (location = 0) out highp vec3 v_texcoord;\n");
 		}
 
 		if (enableFog) {
 			// See the fragment shader generator
-			WRITE(p, "layout (location = 3) out float v_fogdepth;\n");
+			WRITE(p, "layout (location = 3) out highp float v_fogdepth;\n");
 		}
 	} else if (compat.shaderLanguage == HLSL_D3D11 || compat.shaderLanguage == HLSL_D3D9) {
 		// Note: These two share some code after this hellishly large if/else.
@@ -819,9 +824,9 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 			// Uncomment this to screw up bone shaders to check the vertex shader software fallback
 			// WRITE(p, "THIS SHOULD ERROR! #error");
 			if (numBoneWeights == 1 && ShaderLanguageIsOpenGL(compat.shaderLanguage))
-				WRITE(p, "  %s skinMatrix = w1 * u_bone0", boneMatrix);
+				WRITE(p, "  %s skinMatrix = mul(w1, u_bone0)", boneMatrix);
 			else
-				WRITE(p, "  %s skinMatrix = w1.x * u_bone0", boneMatrix);
+				WRITE(p, "  %s skinMatrix = mul(w1.x, u_bone0)", boneMatrix);
 			for (int i = 1; i < numBoneWeights; i++) {
 				const char *weightAttr = boneWeightAttr[i];
 				// workaround for "cant do .x of scalar" issue.
@@ -829,7 +834,7 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 					if (numBoneWeights == 1 && i == 0) weightAttr = "w1";
 					if (numBoneWeights == 5 && i == 4) weightAttr = "w2";
 				}
-				WRITE(p, " + %s * u_bone%i", weightAttr, i);
+				WRITE(p, " + mul(%s, u_bone%i)", weightAttr, i);
 			}
 
 			WRITE(p, ";\n");
@@ -1086,7 +1091,7 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 			WRITE(p, "  %sv_fogdepth = (viewPos.z + u_fogcoef.x) * u_fogcoef.y;\n", compat.vsOutPrefix);
 	}
 
-	if (!isModeThrough && gstate_c.Supports(GPU_SUPPORTS_VS_RANGE_CULLING)) {
+	if (vertexRangeCulling) {
 		WRITE(p, "  vec3 projPos = outPos.xyz / outPos.w;\n");
 		// Vertex range culling doesn't happen when depth is clamped, so only do this if in range.
 		WRITE(p, "  if (u_cullRangeMin.w <= 0.0 || (projPos.z >= u_cullRangeMin.z && projPos.z <= u_cullRangeMax.z)) {\n");
@@ -1100,6 +1105,13 @@ bool GenerateVertexShader(const VShaderID &id, char *buffer, const ShaderLanguag
 
 	// We've named the output gl_Position in HLSL as well.
 	WRITE(p, "  %sgl_Position = outPos;\n", compat.vsOutPrefix);
+
+	if (gstate_c.Supports(GPU_NEEDS_Z_EQUAL_W_HACK)) {
+		// See comment in GPU_Vulkan.cpp.
+		WRITE(p, "  if (%sgl_Position.z == %sgl_Position.w) %sgl_Position.z *= 0.999999;\n",
+			compat.vsOutPrefix, compat.vsOutPrefix, compat.vsOutPrefix);
+	}
+
 	if (compat.shaderLanguage == GLSL_VULKAN) {
 		WRITE(p, " gl_PointSize = 1.0;\n");
 	}

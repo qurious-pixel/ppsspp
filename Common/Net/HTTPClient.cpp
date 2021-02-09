@@ -4,13 +4,18 @@
 #include "Common/StringUtils.h"
 
 #ifndef _WIN32
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <netdb.h>
 #include <unistd.h>
 #define closesocket close
 #else
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <io.h>
@@ -48,6 +53,19 @@ inline unsigned short myhtons(unsigned short x) {
 	return (x >> 8) | (x << 8);
 }
 
+const char *DNSTypeAsString(DNSType type) {
+	switch (type) {
+	case DNSType::IPV4:
+		return "IPV4";
+	case DNSType::IPV6:
+		return "IPV6";
+	case DNSType::ANY:
+		return "ANY";
+	default:
+		return "N/A";
+	}
+}
+
 bool Connection::Resolve(const char *host, int port, DNSType type) {
 	if ((intptr_t)sock_ != -1) {
 		ERROR_LOG(IO, "Resolve: Already have a socket");
@@ -66,8 +84,8 @@ bool Connection::Resolve(const char *host, int port, DNSType type) {
 
 	std::string err;
 	if (!net::DNSResolve(host, port_str, &resolved_, err, type)) {
-		ERROR_LOG(IO, "Failed to resolve host %s: %s", host, err.c_str());
-		// So that future calls fail.
+		WARN_LOG(IO, "Failed to resolve host '%s': '%s' (%s)", host, err.c_str(), DNSTypeAsString(type));
+		// Zero port so that future calls fail.
 		port_ = 0;
 		return false;
 	}
@@ -353,6 +371,7 @@ int Client::ReadResponseHeaders(Buffer *readbuf, std::vector<std::string> &respo
 	if (code_pos != line.npos) {
 		code = atoi(&line[code_pos]);
 	} else {
+		ERROR_LOG(IO, "Code not parse HTTP status code");
 		return -1;
 	}
 
@@ -364,6 +383,7 @@ int Client::ReadResponseHeaders(Buffer *readbuf, std::vector<std::string> &respo
 	}
 
 	if (responseHeaders.size() == 0) {
+		ERROR_LOG(IO, "No HTTP response headers");
 		return -1;
 	}
 

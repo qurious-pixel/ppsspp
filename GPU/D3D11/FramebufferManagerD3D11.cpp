@@ -36,7 +36,6 @@
 #include "GPU/Debugger/Stepping.h"
 #include "GPU/Common/FramebufferManagerCommon.h"
 #include "GPU/Common/PresentationCommon.h"
-#include "Common/GPU/ShaderTranslation.h"
 #include "GPU/Common/TextureDecoder.h"
 #include "GPU/D3D11/FramebufferManagerD3D11.h"
 #include "GPU/D3D11/ShaderManagerD3D11.h"
@@ -125,15 +124,11 @@ FramebufferManagerD3D11::FramebufferManagerD3D11(Draw::DrawContext *draw)
 	uint32_t nullData[1]{};
 	context_->UpdateSubresource(nullTexture_, 0, nullptr, nullData, 1, 0);
 
-	ShaderTranslationInit();
-
 	presentation_->SetLanguage(HLSL_D3D11);
 	preferredPixelsFormat_ = Draw::DataFormat::B8G8R8A8_UNORM;
 }
 
 FramebufferManagerD3D11::~FramebufferManagerD3D11() {
-	ShaderTranslationShutdown();
-
 	// Drawing cleanup
 	if (quadVertexShader_)
 		quadVertexShader_->Release();
@@ -277,10 +272,6 @@ static void CopyPixelDepthOnly(u32 *dstp, const u32 *srcp, size_t c) {
 	}
 }
 
-void FramebufferManagerD3D11::UpdateDownloadTempBuffer(VirtualFramebuffer *nvfb) {
-	// Nothing to do here.
-}
-
 void FramebufferManagerD3D11::SimpleBlit(
 	Draw::Framebuffer *dest, float destX1, float destY1, float destX2, float destY2,
 	Draw::Framebuffer *src, float srcX1, float srcY1, float srcX2, float srcY2, bool linearFilter) {
@@ -335,7 +326,7 @@ void FramebufferManagerD3D11::SimpleBlit(
 	gstate_c.Dirty(DIRTY_BLEND_STATE | DIRTY_DEPTHSTENCIL_STATE | DIRTY_RASTER_STATE | DIRTY_VIEWPORTSCISSOR_STATE | DIRTY_VERTEXSHADER_STATE);
 }
 
-void FramebufferManagerD3D11::BlitFramebuffer(VirtualFramebuffer *dst, int dstX, int dstY, VirtualFramebuffer *src, int srcX, int srcY, int w, int h, int bpp) {
+void FramebufferManagerD3D11::BlitFramebuffer(VirtualFramebuffer *dst, int dstX, int dstY, VirtualFramebuffer *src, int srcX, int srcY, int w, int h, int bpp, const char *tag) {
 	if (!dst->fbo || !src->fbo || !useBufferedRendering_) {
 		// This can happen if they recently switched from non-buffered.
 		if (useBufferedRendering_) {
@@ -377,6 +368,8 @@ void FramebufferManagerD3D11::BlitFramebuffer(VirtualFramebuffer *dst, int dstX,
 		dst->fbo, dstX1, dstY1, dstX2, dstY2,
 		srcFBO, srcX1, srcY1, srcX2, srcY2,
 		false);
+
+	draw_->BindTexture(0, nullptr);
 }
 
 // Nobody calls this yet.

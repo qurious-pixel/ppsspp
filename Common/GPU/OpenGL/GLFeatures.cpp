@@ -77,19 +77,28 @@ bool GLExtensions::VersionGEThan(int major, int minor, int sub) {
 }
 
 int GLExtensions::GLSLVersion() {
-	// Used for shader translation and core contexts (Apple drives fail without an exact match.)
-	if (gl_extensions.VersionGEThan(3, 3)) {
-		return gl_extensions.ver[0] * 100 + gl_extensions.ver[1] * 10;
-	} else if (gl_extensions.VersionGEThan(3, 2)) {
-		return 150;
-	} else if (gl_extensions.VersionGEThan(3, 1)) {
-		return 140;
-	} else if (gl_extensions.VersionGEThan(3, 0)) {
-		return 130;
-	} else if (gl_extensions.VersionGEThan(2, 1)) {
-		return 120;
+	if (gl_extensions.IsGLES) {
+		if (gl_extensions.GLES3) {
+			// GLSL version matches ES version.
+			return gl_extensions.ver[0] * 100 + gl_extensions.ver[1] * 10;
+		} else {
+			return 100;
+		}
 	} else {
-		return 110;
+		// Used for shader translation and core contexts (Apple drives fail without an exact match.)
+		if (gl_extensions.VersionGEThan(3, 3)) {
+			return gl_extensions.ver[0] * 100 + gl_extensions.ver[1] * 10;
+		} else if (gl_extensions.VersionGEThan(3, 2)) {
+			return 150;
+		} else if (gl_extensions.VersionGEThan(3, 1)) {
+			return 140;
+		} else if (gl_extensions.VersionGEThan(3, 0)) {
+			return 130;
+		} else if (gl_extensions.VersionGEThan(2, 1)) {
+			return 120;
+		} else {
+			return 110;
+		}
 	}
 }
 
@@ -129,13 +138,19 @@ void CheckGLExtensions() {
 	memset(&gl_extensions, 0, sizeof(gl_extensions));
 	gl_extensions.IsCoreContext = useCoreContext;
 
-#ifdef USING_GLES2
-	gl_extensions.IsGLES = !useCoreContext;
-#endif
-
 	const char *renderer = (const char *)glGetString(GL_RENDERER);
 	const char *versionStr = (const char *)glGetString(GL_VERSION);
 	const char *glslVersionStr = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+
+#ifdef USING_GLES2
+	gl_extensions.IsGLES = !useCoreContext;
+#else
+	if (strstr(versionStr, "OpenGL ES") == versionStr) {
+		// For desktops running GLES.
+		gl_extensions.IsGLES = true;
+	}
+#endif
 
 	// Check vendor string to try and guess GPU
 	const char *cvendor = (char *)glGetString(GL_VENDOR);
@@ -160,12 +175,16 @@ void CheckGLExtensions() {
 			gl_extensions.gpuVendor = GPU_VENDOR_IMGTEC;
 		} else if (vendor == "Qualcomm") {
 			gl_extensions.gpuVendor = GPU_VENDOR_QUALCOMM;
+			sscanf(renderer, "Adreno (TM) %d", &gl_extensions.modelNumber);
 		} else if (vendor == "Broadcom") {
 			gl_extensions.gpuVendor = GPU_VENDOR_BROADCOM;
 			// Just for reference: Galaxy Y has renderer == "VideoCore IV HW"
 		} else if (vendor == "Vivante Corporation") {
 			gl_extensions.gpuVendor = GPU_VENDOR_VIVANTE;
+		} else if (vendor == "Apple Inc." || vendor == "Apple") {
+			gl_extensions.gpuVendor = GPU_VENDOR_APPLE;
 		} else {
+			WARN_LOG(G3D, "Unknown GL vendor: '%s'", vendor.c_str());
 			gl_extensions.gpuVendor = GPU_VENDOR_UNKNOWN;
 		}
 	} else {
@@ -208,12 +227,6 @@ void CheckGLExtensions() {
 		}
 	}
 
-#ifndef USING_GLES2
-	if (strstr(versionStr, "OpenGL ES") == versionStr) {
-		// For desktops running GLES.
-		gl_extensions.IsGLES = true;
-	}
-#endif
 
 	if (!gl_extensions.IsGLES) { // For desktop GL
 		gl_extensions.ver[0] = parsed[0];
@@ -473,9 +486,11 @@ void CheckGLExtensions() {
 			}
 		}
 
-		// Now, Adreno lies. So let's override it.
-		if (gl_extensions.gpuVendor == GPU_VENDOR_QUALCOMM) {
-			WARN_LOG(G3D, "Detected Adreno - lowering int precision");
+		// Now, old Adreno lies about supporting full precision integers. So let's override it.
+		// The model number comparison should probably be 400 or 500. This causes us to avoid depal-in-shader.
+		// It seems though that this caused large perf regressions on Adreno 5xx, so I've bumped it up to 600.
+		if (gl_extensions.gpuVendor == GPU_VENDOR_QUALCOMM && gl_extensions.modelNumber < 600) {
+			WARN_LOG(G3D, "Detected old Adreno - lowering reported int precision for safety");
 			gl_extensions.range[1][5][0] = 15;
 			gl_extensions.range[1][5][1] = 15;
 		}
@@ -579,6 +594,8 @@ std::string ApplyGLSLPrelude(const std::string &source, uint32_t stage) {
 	if (!gl_extensions.IsGLES && gl_extensions.IsCoreContext) {
 		// We need to add a corresponding #version.  Apple drivers fail without an exact match.
 		version = StringFromFormat("#version %d\n", gl_extensions.GLSLVersion());
+	} else if (gl_extensions.IsGLES && gl_extensions.GLES3) {
+		version = StringFromFormat("#version %d es\n", gl_extensions.GLSLVersion());
 	}
 	if (stage == GL_FRAGMENT_SHADER) {
 		temp = version + glsl_fragment_prelude + source;

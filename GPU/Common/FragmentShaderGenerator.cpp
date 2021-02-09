@@ -22,6 +22,7 @@
 #include "Common/StringUtils.h"
 #include "Common/GPU/OpenGL/GLFeatures.h"
 #include "Common/GPU/ShaderWriter.h"
+#include "Common/GPU/thin3d.h"
 #include "Core/Reporting.h"
 #include "Core/Config.h"
 #include "GPU/Common/GPUStateUtils.h"
@@ -33,7 +34,7 @@
 
 #define WRITE(p, ...) p.F(__VA_ARGS__)
 
-bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLanguageDesc &compat, uint64_t *uniformMask, std::string *errorString) {
+bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLanguageDesc &compat, Draw::Bugs bugs, uint64_t *uniformMask, std::string *errorString) {
 	*uniformMask = 0;
 	errorString->clear();
 
@@ -77,15 +78,13 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 	bool enableColorDoubling = id.Bit(FS_BIT_COLOR_DOUBLE);
 	bool doTextureProjection = id.Bit(FS_BIT_DO_TEXTURE_PROJ);
 	bool doTextureAlpha = id.Bit(FS_BIT_TEXALPHA);
-	bool doFlatShading = id.Bit(FS_BIT_FLATSHADE);
+
+	bool flatBug = bugs.Has(Draw::Bugs::BROKEN_FLAT_IN_SHADER) && g_Config.bVendorBugChecksEnabled;
+
+	bool doFlatShading = id.Bit(FS_BIT_FLATSHADE) && !flatBug;
 	bool shaderDepal = id.Bit(FS_BIT_SHADER_DEPAL);
 	bool bgraTexture = id.Bit(FS_BIT_BGRA_TEXTURE);
-	bool colorWriteMask = id.Bit(FS_BIT_COLOR_WRITEMASK);
-
-	if (colorWriteMask && !compat.bitwiseOps) {
-		*errorString = "Color Write Mask requires bitwise ops";
-		return false;
-	}
+	bool colorWriteMask = id.Bit(FS_BIT_COLOR_WRITEMASK) && compat.bitwiseOps;
 
 	GEComparison alphaTestFunc = (GEComparison)id.Bits(FS_BIT_ALPHA_TEST_FUNC, 3);
 	GEComparison colorTestFunc = (GEComparison)id.Bits(FS_BIT_COLOR_TEST_FUNC, 2);
@@ -116,6 +115,11 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 	bool needFragCoord = readFramebuffer || gstate_c.Supports(GPU_ROUND_FRAGMENT_DEPTH_TO_16BIT);
 	bool writeDepth = gstate_c.Supports(GPU_ROUND_FRAGMENT_DEPTH_TO_16BIT);
 
+	if (shaderDepal && !doTexture) {
+		*errorString = "depal requires a texture";
+		return false;
+	}
+
 	if (readFramebuffer && compat.shaderLanguage == HLSL_D3D9) {
 		*errorString = "Framebuffer read not yet supported in HLSL D3D9";
 		return false;
@@ -141,14 +145,15 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 			WRITE(p, "layout (binding = 2) uniform sampler2D pal;\n");
 		}
 
-		WRITE(p, "layout (location = 1) %s in vec4 v_color0;\n", shading);
+		// Note: the precision qualifiers must match the vertex shader!
+		WRITE(p, "layout (location = 1) %s in lowp vec4 v_color0;\n", shading);
 		if (lmode)
-			WRITE(p, "layout (location = 2) %s in vec3 v_color1;\n", shading);
+			WRITE(p, "layout (location = 2) %s in lowp vec3 v_color1;\n", shading);
 		if (enableFog) {
-			WRITE(p, "layout (location = 3) in float v_fogdepth;\n");
+			WRITE(p, "layout (location = 3) in highp float v_fogdepth;\n");
 		}
 		if (doTexture) {
-			WRITE(p, "layout (location = 0) in vec3 v_texcoord;\n");
+			WRITE(p, "layout (location = 0) in highp vec3 v_texcoord;\n");
 		}
 
 		if (enableAlphaTest && !alphaTestAgainstZero) {
@@ -292,7 +297,7 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 			WRITE(p, "float3 u_fogcolor : register(c%i);\n", CONST_PS_FOGCOLOR);
 		}
 	} else if (ShaderLanguageIsOpenGL(compat.shaderLanguage)) {
-		if (shaderDepal && gl_extensions.IsGLES) {
+		if ((shaderDepal || colorWriteMask) && gl_extensions.IsGLES) {
 			WRITE(p, "precision highp int;\n");
 		}
 
@@ -357,9 +362,9 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 			WRITE(p, "uniform vec3 u_texenv;\n");
 		}
 
-		WRITE(p, "%s %s vec4 v_color0;\n", shading, compat.varying_fs);
+		WRITE(p, "%s %s lowp vec4 v_color0;\n", shading, compat.varying_fs);
 		if (lmode)
-			WRITE(p, "%s %s vec3 v_color1;\n", shading, compat.varying_fs);
+			WRITE(p, "%s %s lowp vec3 v_color1;\n", shading, compat.varying_fs);
 		if (enableFog) {
 			*uniformMask |= DIRTY_FOGCOLOR;
 			WRITE(p, "uniform vec3 u_fogcolor;\n");
@@ -392,7 +397,7 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 
 		if (!strcmp(compat.fragColor0, "fragColor0")) {
 			const char *qualifierColor0 = "out";
-			if (compat.lastFragData && !strcmp(compat.lastFragData, compat.fragColor0)) {
+			if (readFramebuffer && compat.lastFragData && !strcmp(compat.lastFragData, compat.fragColor0)) {
 				qualifierColor0 = "inout";
 			}
 			// Output the output color definitions.
@@ -403,20 +408,31 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 				WRITE(p, "%s vec4 fragColor0;\n", qualifierColor0);
 			}
 		}
+	}
 
+	bool hasPackUnorm4x8 = false;
+	if (compat.shaderLanguage == GLSL_VULKAN) {
+		hasPackUnorm4x8 = true;
+	} else if (ShaderLanguageIsOpenGL(compat.shaderLanguage)) {
+		if (compat.gles) {
+			hasPackUnorm4x8 = compat.glslVersionNumber >= 310;
+		} else {
+			hasPackUnorm4x8 = compat.glslVersionNumber >= 400;
+		}
 	}
 
 	// Provide implementations of packUnorm4x8 and unpackUnorm4x8 if not available.
-	if (colorWriteMask && compat.shaderLanguage == HLSL_D3D11 || (compat.shaderLanguage == GLSL_3xx && compat.glslVersionNumber < 400)) {
+	if (colorWriteMask && !hasPackUnorm4x8) {
 		WRITE(p, "uint packUnorm4x8(vec4 v) {\n");
-		WRITE(p, "  v = clamp(v, 0.0, 1.0);\n");
-		WRITE(p, "  uvec4 u = uvec4(255.0 * v);\n");
+		WRITE(p, "  highp vec4 f = clamp(v, 0.0, 1.0);\n");
+		WRITE(p, "  uvec4 u = uvec4(255.0 * f);\n");
 		WRITE(p, "  return u.x | (u.y << 8) | (u.z << 16) | (u.w << 24);\n");
 		WRITE(p, "}\n");
 
-		WRITE(p, "vec4 unpackUnorm4x8(uint x) {\n");
-		WRITE(p, "  uvec4 u = uvec4(x & 0xFFU, (x >> 8) & 0xFFU, (x >> 16) & 0xFFU, (x >> 24) & 0xFFU);\n");
-		WRITE(p, "  return vec4(u) * (1.0 / 255.0);\n");
+		WRITE(p, "vec4 unpackUnorm4x8(highp uint x) {\n");
+		WRITE(p, "  highp uvec4 u = uvec4(x & 0xFFU, (x >> 8) & 0xFFU, (x >> 16) & 0xFFU, (x >> 24) & 0xFFU);\n");
+		WRITE(p, "  highp vec4 f = vec4(u);\n");
+		WRITE(p, "  return f * (1.0 / 255.0);\n");
 		WRITE(p, "}\n");
 	}
 
@@ -564,10 +580,10 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 				WRITE(p, "  } else {\n");
 				WRITE(p, "    uv_round = uv;\n");
 				WRITE(p, "  }\n");
-				WRITE(p, "  vec4 t = %s(tex, uv_round);\n", compat.texture);
-				WRITE(p, "  vec4 t1 = %sOffset(tex, uv_round, ivec2(1, 0));\n", compat.texture);
-				WRITE(p, "  vec4 t2 = %sOffset(tex, uv_round, ivec2(0, 1));\n", compat.texture);
-				WRITE(p, "  vec4 t3 = %sOffset(tex, uv_round, ivec2(1, 1));\n", compat.texture);
+				WRITE(p, "  highp vec4 t = %s(tex, uv_round);\n", compat.texture);
+				WRITE(p, "  highp vec4 t1 = %sOffset(tex, uv_round, ivec2(1, 0));\n", compat.texture);
+				WRITE(p, "  highp vec4 t2 = %sOffset(tex, uv_round, ivec2(0, 1));\n", compat.texture);
+				WRITE(p, "  highp vec4 t3 = %sOffset(tex, uv_round, ivec2(1, 1));\n", compat.texture);
 				WRITE(p, "  uint depalMask = (u_depal_mask_shift_off_fmt & 0xFFU);\n");
 				WRITE(p, "  uint depalShift = (u_depal_mask_shift_off_fmt >> 8) & 0xFFU;\n");
 				WRITE(p, "  uint depalOffset = ((u_depal_mask_shift_off_fmt >> 16) & 0xFFU) << 4;\n");
@@ -765,10 +781,21 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 				// When testing against 0 (common), we can avoid some math.
 				// 0.002 is approximately half of 1.0 / 255.0.
 				if (colorTestFunc == GE_COMP_NOTEQUAL) {
-					WRITE(p, "  if (v.r < 0.002 && v.g < 0.002 && v.b < 0.002) %s\n", discardStatement);
+					if (compat.shaderLanguage == GLSL_VULKAN) {
+						// Old workaround for Adreno driver bug. We could make this the main path actually
+						// since the math is roughly equivalent given the non-negative inputs.
+						WRITE(p, "  if (v.r + v.g + v.b < 0.002) %s\n", discardStatement);
+					} else {
+						WRITE(p, "  if (v.r < 0.002 && v.g < 0.002 && v.b < 0.002) %s\n", discardStatement);
+					}
 				} else if (colorTestFunc != GE_COMP_NEVER) {
-					// Anything else is a test for == 0.
-					WRITE(p, "  if (v.r > 0.002 || v.g > 0.002 || v.b > 0.002) %s\n", discardStatement);
+					if (compat.shaderLanguage == GLSL_VULKAN) {
+						// See the GE_COMP_NOTEQUAL case.
+						WRITE(p, "  if (v.r + v.g + v.b > 0.002) %s\n", discardStatement);
+					} else {
+						// Anything else is a test for == 0.
+						WRITE(p, "  if (v.r > 0.002 || v.g > 0.002 || v.b > 0.002) %s\n", discardStatement);
+					}
 				} else {
 					// NEVER has been logged as used by games, although it makes little sense - statically failing.
 					// Maybe we could discard the drawcall, but it's pretty rare.  Let's just statically discard here.
@@ -802,10 +829,9 @@ bool GenerateFragmentShader(const FShaderID &id, char *buffer, const ShaderLangu
 						WRITE(p, "  vec3 colortest = roundAndScaleTo255v(v.rgb);\n");
 						WRITE(p, "  if ((colortest.r %s u_alphacolorref.r) && (colortest.g %s u_alphacolorref.g) && (colortest.b %s u_alphacolorref.b)) %s\n", test, test, test, discardStatement);
 					} else if (compat.bitwiseOps) {
-						// Apparently GLES3 does not support vector bitwise ops.
 						WRITE(p, "  ivec3 v_scaled = roundAndScaleTo255iv(v.rgb);\n");
 						if (compat.shaderLanguage == GLSL_VULKAN) {
-							// TODO: Use this for GL as well?
+							// Apparently GLES3 does not support vector bitwise ops, but Vulkan does?
 							WRITE(p, "  if ((v_scaled & u_alphacolormask.rgb) %s (u_alphacolorref.rgb & u_alphacolormask.rgb)) %s\n", colorTestFuncs[colorTestFunc], discardStatement);
 						} else {
 							const char *maskedFragColor = "ivec3(v_scaled.r & u_alphacolormask.r, v_scaled.g & u_alphacolormask.g, v_scaled.b & u_alphacolormask.b)";

@@ -6,6 +6,27 @@
 
 #include "ext/glslang/SPIRV/GlslangToSpv.h"
 
+const char *ShaderLanguageAsString(ShaderLanguage lang) {
+	switch (lang) {
+	case GLSL_1xx: return "GLSL 1.x";
+	case GLSL_3xx: return "GLSL 3.x";
+	case GLSL_VULKAN: return "GLSL-VK";
+	case HLSL_D3D9: return "HLSL-D3D9";
+	case HLSL_D3D11: return "HLSL-D3D11";
+	default: return "(combination)";
+	}
+}
+
+const char *ShaderStageAsString(ShaderStage stage) {
+	switch (stage) {
+	case ShaderStage::Fragment: return "Fragment";
+	case ShaderStage::Vertex: return "Vertex";
+	case ShaderStage::Geometry: return "Geometry";
+	case ShaderStage::Compute: return "Compute";
+	default: return "(unknown)";
+	}
+}
+
 ShaderLanguageDesc::ShaderLanguageDesc(ShaderLanguage lang) {
 	Init(lang);
 }
@@ -15,6 +36,7 @@ void ShaderLanguageDesc::Init(ShaderLanguage lang) {
 	switch (lang) {
 	case GLSL_1xx:
 		// Just used in the shader test, and as a basis for the others in DetectShaderLanguage.
+		// The real OpenGL initialization happens in thin3d_gl.cpp.
 		glslVersionNumber = 110;
 		attribute = "attribute";
 		varying_vs = "varying";

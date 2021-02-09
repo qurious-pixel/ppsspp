@@ -125,7 +125,7 @@ GPU_D3D11::~GPU_D3D11() {
 void GPU_D3D11::CheckGPUFeatures() {
 	u32 features = 0;
 
-	if (!PSP_CoreParameter().compat.flags().DepthRangeHack) {
+	if (!PSP_CoreParameter().compat.flags().DisableRangeCulling) {
 		features |= GPU_SUPPORTS_VS_RANGE_CULLING;
 	}
 	features |= GPU_SUPPORTS_BLEND_MINMAX;
@@ -140,7 +140,8 @@ void GPU_D3D11::CheckGPUFeatures() {
 	features |= GPU_SUPPORTS_ANISOTROPY;
 #endif
 
-	features |= GPU_SUPPORTS_OES_TEXTURE_NPOT;
+	features |= GPU_SUPPORTS_DEPTH_TEXTURE;
+	features |= GPU_SUPPORTS_TEXTURE_NPOT;
 	if (draw_->GetDeviceCaps().dualSourceBlend)
 		features |= GPU_SUPPORTS_DUALSOURCE_BLEND;
 	if (draw_->GetDeviceCaps().depthClampSupported)

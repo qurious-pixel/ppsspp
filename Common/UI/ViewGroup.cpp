@@ -860,7 +860,7 @@ void ScrollView::PersistData(PersistStatus status, std::string anonId, PersistMa
 void ScrollView::SetVisibility(Visibility visibility) {
 	ViewGroup::SetVisibility(visibility);
 
-	if (visibility == V_GONE) {
+	if (visibility == V_GONE && !rememberPosition_) {
 		// Since this is no longer shown, forget the scroll position.
 		// For example, this happens when switching tabs.
 		ScrollTo(0.0f);
@@ -1348,9 +1348,9 @@ void ChoiceStrip::Draw(UIContext &dc) {
 	ViewGroup::Draw(dc);
 	if (topTabs_) {
 		if (orientation_ == ORIENT_HORIZONTAL)
-			dc.Draw()->DrawImageStretch(dc.theme->whiteImage, bounds_.x, bounds_.y2() - 4, bounds_.x2(), bounds_.y2(), dc.theme->itemDownStyle.background.color );
+			dc.Draw()->DrawImageCenterTexel(dc.theme->whiteImage, bounds_.x, bounds_.y2() - 4, bounds_.x2(), bounds_.y2(), dc.theme->itemDownStyle.background.color );
 		else if (orientation_ == ORIENT_VERTICAL)
-			dc.Draw()->DrawImageStretch(dc.theme->whiteImage, bounds_.x2() - 4, bounds_.y, bounds_.x2(), bounds_.y2(), dc.theme->itemDownStyle.background.color );
+			dc.Draw()->DrawImageCenterTexel(dc.theme->whiteImage, bounds_.x2() - 4, bounds_.y, bounds_.x2(), bounds_.y2(), dc.theme->itemDownStyle.background.color );
 	}
 }
 

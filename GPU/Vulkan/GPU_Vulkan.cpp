@@ -184,7 +184,7 @@ GPU_Vulkan::~GPU_Vulkan() {
 void GPU_Vulkan::CheckGPUFeatures() {
 	uint32_t features = 0;
 
-	if (!PSP_CoreParameter().compat.flags().DepthRangeHack) {
+	if (!PSP_CoreParameter().compat.flags().DisableRangeCulling) {
 		features |= GPU_SUPPORTS_VS_RANGE_CULLING;
 	}
 
@@ -227,10 +227,11 @@ void GPU_Vulkan::CheckGPUFeatures() {
 	features |= GPU_SUPPORTS_FRAMEBUFFER_BLIT;
 	features |= GPU_SUPPORTS_BLEND_MINMAX;
 	features |= GPU_SUPPORTS_COPY_IMAGE;
-	features |= GPU_SUPPORTS_OES_TEXTURE_NPOT;
+	features |= GPU_SUPPORTS_TEXTURE_NPOT;
 	features |= GPU_SUPPORTS_INSTANCE_RENDERING;
 	features |= GPU_SUPPORTS_VERTEX_TEXTURE_FETCH;
 	features |= GPU_SUPPORTS_TEXTURE_FLOAT;
+	features |= GPU_SUPPORTS_DEPTH_TEXTURE;
 
 	if (vulkan_->GetDeviceInfo().canBlitToPreferredDepthStencilFormat) {
 		features |= GPU_SUPPORTS_FRAMEBUFFER_BLIT_TO_DEPTH;

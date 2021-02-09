@@ -266,7 +266,6 @@ SOURCES_CXX += \
 	$(GPUDIR)/GPU.cpp \
 	$(GPUDIR)/GPUState.cpp \
 	$(GPUDIR)/Math3D.cpp \
-	$(GPUDIR)/Null/NullGpu.cpp \
 	$(GPUDIR)/Software/Clipper.cpp \
 	$(GPUDIR)/Software/Lighting.cpp \
 	$(GPUDIR)/Software/Rasterizer.cpp \
@@ -670,8 +669,7 @@ SOURCES_CXX += \
 	$(GPUDIR)/Directx9/StateMappingDX9.cpp \
 	$(GPUDIR)/Directx9/StencilBufferDX9.cpp \
 	$(GPUDIR)/Directx9/TextureCacheDX9.cpp \
-	$(GPUDIR)/Directx9/TextureScalerDX9.cpp \
-	$(GPUDIR)/Directx9/VertexShaderGeneratorHLSL.cpp
+	$(GPUDIR)/Directx9/TextureScalerDX9.cpp
 
 SOURCES_CXX += \
 	$(GPUDIR)/D3D11/DepalettizeShaderD3D11.cpp \

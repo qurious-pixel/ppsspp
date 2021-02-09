@@ -164,13 +164,19 @@ bool InputSink::Skip(size_t bytes) {
 	return true;
 }
 
+void InputSink::Discard() {
+	read_ = 0;
+	write_ = 0;
+	valid_ = 0;
+}
+
 void InputSink::Fill() {
 	// Avoid small reads if possible.
 	if (BUFFER_SIZE - valid_ > PRESSURE) {
 		// Whatever isn't valid and follows write_ is what's available.
 		size_t avail = BUFFER_SIZE - std::max(write_, valid_);
 
-		int bytes = recv(fd_, buf_ + write_, (int)avail, 0);
+		int bytes = recv(fd_, buf_ + write_, (int)avail, MSG_NOSIGNAL);
 		AccountFill(bytes);
 	}
 }
@@ -343,6 +349,10 @@ bool OutputSink::Flush(bool allowBlock) {
 		size_t avail = std::min(BUFFER_SIZE - read_, valid_);
 
 		int bytes = send(fd_, buf_ + read_, (int)avail, MSG_NOSIGNAL);
+#if !PPSSPP_PLATFORM(WINDOWS)
+		if (bytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			bytes = 0;
+#endif
 		AccountDrain(bytes);
 
 		if (bytes == 0) {
@@ -371,6 +381,10 @@ void OutputSink::Drain() {
 		size_t avail = std::min(BUFFER_SIZE - read_, valid_);
 
 		int bytes = send(fd_, buf_ + read_, (int)avail, MSG_NOSIGNAL);
+#if !PPSSPP_PLATFORM(WINDOWS)
+		if (bytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			bytes = 0;
+#endif
 		AccountDrain(bytes);
 	}
 }
@@ -385,6 +399,14 @@ void OutputSink::AccountPush(size_t bytes) {
 
 void OutputSink::AccountDrain(int bytes) {
 	if (bytes < 0) {
+#if PPSSPP_PLATFORM(WINDOWS)
+		int err = WSAGetLastError();
+		if (err == WSAEWOULDBLOCK)
+			return;
+#else
+		if (errno == EWOULDBLOCK || errno == EAGAIN)
+			return;
+#endif
 		ERROR_LOG(IO, "Error writing to socket");
 		return;
 	}

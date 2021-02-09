@@ -224,6 +224,20 @@ void DrawBuffer::DrawImage(ImageID atlas_image, float x, float y, float scale, C
 	DrawImageStretch(atlas_image, x, y, x + w, y + h, color);
 }
 
+void DrawBuffer::DrawImageCenterTexel(ImageID atlas_image, float x1, float y1, float x2, float y2, Color color) {
+	const AtlasImage *image = atlas->getImage(atlas_image);
+	if (!image)
+		return;
+	float centerU = (image->u1 + image->u2) * 0.5f;
+	float centerV = (image->v1 + image->v2) * 0.5f;
+	V(x1,	y1, color, centerU, centerV);
+	V(x2,	y1, color, centerU, centerV);
+	V(x2,	y2, color, centerU, centerV);
+	V(x1,	y1, color, centerU, centerV);
+	V(x2,	y2, color, centerU, centerV);
+	V(x1,	y2, color, centerU, centerV);
+}
+
 void DrawBuffer::DrawImageStretch(ImageID atlas_image, float x1, float y1, float x2, float y2, Color color) {
 	const AtlasImage *image = atlas->getImage(atlas_image);
 	if (!image)
@@ -234,6 +248,18 @@ void DrawBuffer::DrawImageStretch(ImageID atlas_image, float x1, float y1, float
 	V(x1,	y1, color, image->u1, image->v1);
 	V(x2,	y2, color, image->u2, image->v2);
 	V(x1,	y2, color, image->u1, image->v2);
+}
+
+void DrawBuffer::DrawImageStretchVGradient(ImageID atlas_image, float x1, float y1, float x2, float y2, Color color1, Color color2) {
+	const AtlasImage *image = atlas->getImage(atlas_image);
+	if (!image)
+		return;
+	V(x1, y1, color1, image->u1, image->v1);
+	V(x2, y1, color1, image->u2, image->v1);
+	V(x2, y2, color2, image->u2, image->v2);
+	V(x1, y1, color1, image->u1, image->v1);
+	V(x2, y2, color2, image->u2, image->v2);
+	V(x1, y2, color2, image->u1, image->v2);
 }
 
 inline void rot(float *v, float angle, float xc, float yc) {

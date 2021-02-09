@@ -25,57 +25,95 @@ If you want to download regularly updated builds for Android, Windows x86 and x6
 
 For game compatibility, see [community compatibility feedback](https://report.ppsspp.org/games).
 
+What's new in 1.11.0
+====================
+* Lots of minor bug fixes, crash fixes, and performance fixes and improvements.
+* New Browse... button to allow opening SD cards on Android 11
+* Countless AdHoc networking fixes by ANR2ME, for example Dragon Ball Shin Budokai, PowerStone,
+  Bleach Heat The Soul 7, Kingdom Hearts, GTA: VCS and many more.
+* Graphics issue with car reflections fixed in Outrun, Dirt 2 ([#13636], [#13640], [#13760])
+* Cut-off cards in Yu Gi Oh fixed ([#7124]).
+* Numerous fixes to the builtin fonts by nassau-tk
+* Added exception handler so PPSSPP stays alive if a game crashes ([#11795]/[#13092])
+* Desktop: Support for multiple instance multiplayer ([#13172], ...)
+* Workaround for rendering bugs with flat shading in iOS 14
+* Multiple fixes to the IR interpreter ([#13897], ...)
+* UI: New fullscreen button on desktop platforms, optional navigation sounds ([#13239])
+* Audio and multiple hangs fixes in UWP version ([#13792], ...)
+* Partial microphone support ([#12336], ...)
+* Workaround for wacky action mirroring bug in Hitman Reborn Battle Arena 2 ([#13706], [#13526])
+* Hardware texture upscaling for Vulkan, mipmap generation ([#13235], [#13514])
+* Added MMPX Vulkan texture upscaling shader ([#13986])
+* Depth texturing support in Vulkan and D3D11 ([#13262], [#13556], ...)
+* Performance fix for Test Drive Unlimited ([#13355], ...)
+* Allow rewind on mobile ([#13866])
+* Added option to disable on-screen messages ([#13695])
+* Added "Lower resolution for effects" on libretro ([#13654])
+* Allow chaining multiple post-processing shaders ([#12924])
+* Support for loading game-specific plugins ([#13335])
+* Fixed Assassin's Creed: Bloodlines Save issue on Android ([#12761])
+* Hanayaka Nari Wa ga Ichizoku: mono voices fixed ([#5213])
+* Additional fixed games:
+    * Namco Museum - Battle Collection, Vol 2 ([#9523], [#13297], [#13298])
+    * Dream Club Portable (graphics bugs, GL and Vulkan) ([#6025])
+    * Capcom Classic Collection Reloaded (stuck in return game) ([#4671])
+    * Xyanide Resurrection (freezing) ([#8526])
+    * Dissidia Final Fantasy Chinese (patched game, invalid address) ([#13204])
+    * Crazy Taxi ([#13368])
+    * Spiderman: Friend or Foe ([#13969])
+    * Downstream Panic (US) (New Game crash) ([#13633])
+
 What's new in 1.10.3
 --------------------
-* Fix for control layout editor ([#13125][])
+* Fix for control layout editor ([#13125])
 
 What's new in 1.10.2
 --------------------
-* More crashfixes ([#13094][], [#13093][])
-* Improve download performance and cancel behavior ([#13095][])
-* Restore the removed I/O on Thread option ([#13096][])
+* More crashfixes ([#13094], [#13093])
+* Improve download performance and cancel behavior ([#13095])
+* Restore the removed I/O on Thread option ([#13096])
 
 What's new in 1.10.1
 --------------------
-* Fixes for common crashes ([#13077][], [#13076][], see [#13057][])
-* Fix for offset rendering in D3D9 ([#13071][])
+* Fixes for common crashes ([#13077], [#13076], see [#13057])
+* Fix for offset rendering in D3D9 ([#13071])
 
 What's new in 1.10.0
 --------------------
-* Graphics and compatibility fixes ([#12800][], [#12670][], [#12635][], [#12857][], [#12941][], [#11898][], [#12695][], more)
-* Assorted minor performance improvements, game load speedup ([#12462][], [#12652][])
-* Screen inset (notch) support on Android ([#12779][])
-* Analog stick support for menu navigation ([#12685][])
-* Fixed audio glitches in SDL builds ([#12916][], [#12920][])
-* Support more languages in in-game dialogs ([#12702][]). Croatian language added to PPSSPP.
-* Simple multiplayer chat ([#12667][])
-* More advanced postprocessing (multipass, parameters) ([#12905][], [#12901][])
-* Add PPSSPP-specific CWCheat ([#12816][], [#12912][])
-* Reintroduce Cardboard VR, allow more resolutions ([#12449][], [#8714][])
-* Fix some crashes ([#12908][], [#12876][])
-* Ghost in the Shell graphics fixed (JIT inaccuracy with inf*0) ([#12519][])
-* Mac build now supports Vulkan on top of MoltenVK ([#12583][])
-* Raspberry Pi 4 EGL crash fixed ([#12474][])
-* VSync now supported on all backends, frame duplication option added for 30 Hz games ([#12659][], [#12602][])
-* Camera supported on Windows, Linux and Mac (still no microphone though) ([#12572][], [#12580][], [#12607][])
-* Darkstalkers fixed and working through software rendering. SW rendering fixed on GLES 2.0 ([#12443][], [#12898][])
-* Hot Shots Golf slowdown and flicker on Vulkan fixed ([#12873][], [#12746][])
-* Pangya Golf crashes and hangs fixed ([#12718][])
-* Allow rebinding of right touch screen analog ([#12486][])
-* Add option to prevent mipmaps from being dumped ([#12818][])
-* Tilt control now have a base radius to help with deadzone ([#12756][])
-* Mappable auto rotating analog stick to pass some game checks ([#12749][])
-* Touch control position can now be snapped to a grid ([#12517][])
-* HiDPI retina display support ([#12552][])
-* Rapid-fire on touch control ([#12601][])
-* Toggle mute button ([#12643][])
-* Add option to resize game icons and more ([#12646][], [#12637][])
-* Frames in-flight now configurable to reduce input lag at the cost of speed ([#12660][])
-* Add toggle mode to combo button ([#12623][])
-* SDL mouse support, Qt menu upgrades ([#12612][], [#12817][])
-* Real support for chinese patched version of Hatsune Miku Project Diva Extend ([#13007][])
-* Some minor kernel module support ([#13028][], [#12225][], [#13026][], [#13004][], [#13038][], [#13023][])
-* Fixed fullscreen toggling with Vulkan in SDL builds ([#11974][])
+* Graphics and compatibility fixes ([#12800], [#12670], [#12635], [#12857], [#12941], [#11898], [#12695], more)
+* Assorted minor performance improvements, game load speedup ([#12462], [#12652])
+* Screen inset (notch) support on Android ([#12779])
+* Analog stick support for menu navigation ([#12685])
+* Fixed audio glitches in SDL builds ([#12916], [#12920])
+* Support more languages in in-game dialogs ([#12702]). Croatian language added to PPSSPP.
+* Simple multiplayer chat ([#12667])
+* More advanced postprocessing (multipass, parameters) ([#12905], [#12901])
+* Add PPSSPP-specific CWCheat ([#12816], [#12912])
+* Reintroduce Cardboard VR, allow more resolutions ([#12449], [#8714])
+* Fix some crashes ([#12908], [#12876])
+* Ghost in the Shell graphics fixed (JIT inaccuracy with inf*0) ([#12519])
+* Mac build now supports Vulkan on top of MoltenVK ([#12583])
+* Raspberry Pi 4 EGL crash fixed ([#12474])
+* VSync now supported on all backends, frame duplication option added for 30 Hz games ([#12659], [#12602])
+* Camera supported on Windows, Linux and Mac (still no microphone though) ([#12572], [#12580], [#12607])
+* Darkstalkers fixed and working through software rendering. SW rendering fixed on GLES 2.0 ([#12443], [#12898])
+* Hot Shots Golf slowdown and flicker on Vulkan fixed ([#12873], [#12746])
+* Pangya Golf crashes and hangs fixed ([#12718])
+* Allow rebinding of right touch screen analog ([#12486])
+* Add option to prevent mipmaps from being dumped ([#12818])
+* Tilt control now have a base radius to help with deadzone ([#12756])
+* Mappable auto rotating analog stick to pass some game checks ([#12749])
+* Touch control position can now be snapped to a grid ([#12517])
+* HiDPI retina display support ([#12552])
+* Rapid-fire on touch control ([#12601])
+* Toggle mute button ([#12643])
+* Add option to resize game icons and more ([#12646], [#12637])
+* Frames in-flight now configurable to reduce input lag at the cost of speed ([#12660])
+* Add toggle mode to combo button ([#12623])
+* SDL mouse support, Qt menu upgrades ([#12612], [#12817])
+* Real support for chinese patched version of Hatsune Miku Project Diva Extend ([#13007])
+* Some minor kernel module support ([#13028], [#12225], [#13026], [#13004], [#13038], [#13023])
+* Fixed fullscreen toggling with Vulkan in SDL builds ([#11974])
 
 What's new in 1.9.0/1.9.3
 -------------------------
@@ -84,62 +122,62 @@ What's new in 1.9.0/1.9.3
 
 What's new in 1.9.0/1.9.2
 -------------------------
-* Flicker fixed in God of War that appeared with newer drivers for Mali GPUs ([#12224][])
-* Improve performance of God of War on Vulkan ([#12242][]), implement built-in GPU profiler ([#12262][], [#12266][])
-* Vertex range culling fixed on ARM Mali ([#12227][])
-* Started to improve VFPU precision, resulting so far in a fix for the long standing Tekken 6 leg shaking problem ([#12217][])
-* Fixed a VFPU precision snafu on ARM64, fixing disappearing officers in Warriors Orochi ([#11299][]) and some problems in Tomb Raider ([#11179][]).
+* Flicker fixed in God of War that appeared with newer drivers for Mali GPUs ([#12224])
+* Improve performance of God of War on Vulkan ([#12242]), implement built-in GPU profiler ([#12262], [#12266])
+* Vertex range culling fixed on ARM Mali ([#12227])
+* Started to improve VFPU precision, resulting so far in a fix for the long standing Tekken 6 leg shaking problem ([#12217])
+* Fixed a VFPU precision snafu on ARM64, fixing disappearing officers in Warriors Orochi ([#11299]) and some problems in Tomb Raider ([#11179]).
 * Vulkan is the default again on Android versions newer than Pie
 * Fix various homebrew store issues
-* GPU pause signal handling fixed, fixing some hangs in Bleach and Armored Core games ([#12160][])
-* Audio sample rate conversion handling fixes ([#12147][])
-* Some Vulkan optimizations (pre-rotation ([#12216][]), perf fix in Metal Gear Acid, etc)
-* Multiple fixes for the UWP build ([#12036][], others)
-* MP3 playback fixes ([#12005][])
-* Audio in Motorstorm: Arctic Edge fixed by returning errors correctly ([#12121][])
-* Audio glitches in Final Fantasy Tactics fixed ([#9956][])
-* Camera display in Invizimals fixed ([#12278][], [#8521][])
-* Added hotkeys for texture dump and replace ([#11938][])
-* Added Visual Studio 2019 support. Windows XP is no longer supported ([#11995][], others)
-* Fixes for video capture ([#12069][])
-* Added a separate sound volume for alternative speed ([#12124][])
-* Improved mouse control (Windows only) ([#12173][], [#12176][])
-* Support for installing texture packs and ISOs from zips ([#12175][])
-* Right analog support for touch controls (only used by patched games and some HD remasters) ([#12182][])
-* Android: Fix OpenSL initialization, possibly helps audio crackle a little. ([#12333][]).
+* GPU pause signal handling fixed, fixing some hangs in Bleach and Armored Core games ([#12160])
+* Audio sample rate conversion handling fixes ([#12147])
+* Some Vulkan optimizations (pre-rotation ([#12216]), perf fix in Metal Gear Acid, etc)
+* Multiple fixes for the UWP build ([#12036], others)
+* MP3 playback fixes ([#12005])
+* Audio in Motorstorm: Arctic Edge fixed by returning errors correctly ([#12121])
+* Audio glitches in Final Fantasy Tactics fixed ([#9956])
+* Camera display in Invizimals fixed ([#12278], [#8521])
+* Added hotkeys for texture dump and replace ([#11938])
+* Added Visual Studio 2019 support. Windows XP is no longer supported ([#11995], others)
+* Fixes for video capture ([#12069])
+* Added a separate sound volume for alternative speed ([#12124])
+* Improved mouse control (Windows only) ([#12173], [#12176])
+* Support for installing texture packs and ISOs from zips ([#12175])
+* Right analog support for touch controls (only used by patched games and some HD remasters) ([#12182])
+* Android: Fix OpenSL initialization, possibly helps audio crackle a little. ([#12333]).
 * Fix graphics on Amazon Fire TV Stick 4K
-* Fixed strange vehicle behavior in MGS:PW (somehow) ([#12342][])
+* Fixed strange vehicle behavior in MGS:PW (somehow) ([#12342])
 
 What's new in 1.8.0
 -------------------
-* Avoid crash when starting PPSSPP due to bad AMD Vulkan drivers ([#11802][])
-* PowerVR Vulkan display corruption fixed ([#11744][], [#11747][])
-* Naruto Shippuden 3 hang fixed ([#11780][])
-* Fixes to various lighting bugs ([#11567][], [#11574][], [#11577][])
-* Fix control issue in Sonic Rivals and Rock Band ([#11878][], [#11798][], [#11879][])
-* Significant performance improvement in Earth Defense Force 2 ([#11172][])
-* Fix "real clock sync" setting (helps with latency for music games - [#11813][])
-* More speed in FF4 effects and other generated curves ([#11425][])
-* Support for resizing Vulkan on Linux ([#11451][])
-* Improved support for GLES on Linux/IoT ([#11507][], [#11537][], [#11541][], [#11632][], [#11746][], [#11806][], [#11845][])
-* Percentage based frameskipping ([#11523][])
-* DXT accuracy improved, fixing thick white line in Gran Turismo sky ([#11530][])
-* Fix Motorstorm freeze on non-Windows ([#11618][])
-* Faster block transfer in some games like Digimon Adventures ([#11531][], [#11553][], [#11776][])
-* Blending optimizations and improvements ([#11543][], [#11620][])
-* Improve D3D11 rendering issues ([#11584][])
-* Change default graphics backend to D3D11 or OpenGL ([#11621][], [#11658][])
-* Remove some outdated settings ([#11665][], [#11666][], [#11667][])
-* Fix remote disc streaming with ipv6 ([#11689][], [#11700][])
-* Vulkan: Workarounds for some driver bugs for 5xx series Qualcomm GPUs ([#11691][], [#11694][])
-* Fix some Qt port issues with recent performance improvements ([#11720][], [#11807][], [#11808][])
-* UWP Xbox One: fix X/Back button confusion ([#11740][])
-* Fix Formula 1 2006 timing issue ([#11767][])
-* Fixes and workarounds for some vertex range culling bugs that broke a few games ([#11785][], [#11859][]), and disable it on older GPUs ([#11712][], [#11773][], [#11787][])
-* Android: Allow putting PSP storage on custom paths like SD cards ([#11812][])
-* Corrected vocp instruction, fixing models in Artdink games ([#11822][], [#11835][])
-* Bundle SDL in binary for macOS builds ([#11831][])
-* Prevent keeping games open on Windows ([#11842][])
+* Avoid crash when starting PPSSPP due to bad AMD Vulkan drivers ([#11802])
+* PowerVR Vulkan display corruption fixed ([#11744], [#11747])
+* Naruto Shippuden 3 hang fixed ([#11780])
+* Fixes to various lighting bugs ([#11567], [#11574], [#11577])
+* Fix control issue in Sonic Rivals and Rock Band ([#11878], [#11798], [#11879])
+* Significant performance improvement in Earth Defense Force 2 ([#11172])
+* Fix "real clock sync" setting (helps with latency for music games - [#11813])
+* More speed in FF4 effects and other generated curves ([#11425])
+* Support for resizing Vulkan on Linux ([#11451])
+* Improved support for GLES on Linux/IoT ([#11507], [#11537], [#11541], [#11632], [#11746], [#11806], [#11845])
+* Percentage based frameskipping ([#11523])
+* DXT accuracy improved, fixing thick white line in Gran Turismo sky ([#11530])
+* Fix Motorstorm freeze on non-Windows ([#11618])
+* Faster block transfer in some games like Digimon Adventures ([#11531], [#11553], [#11776])
+* Blending optimizations and improvements ([#11543], [#11620])
+* Improve D3D11 rendering issues ([#11584])
+* Change default graphics backend to D3D11 or OpenGL ([#11621], [#11658])
+* Remove some outdated settings ([#11665], [#11666], [#11667])
+* Fix remote disc streaming with ipv6 ([#11689], [#11700])
+* Vulkan: Workarounds for some driver bugs for 5xx series Qualcomm GPUs ([#11691], [#11694])
+* Fix some Qt port issues with recent performance improvements ([#11720], [#11807], [#11808])
+* UWP Xbox One: fix X/Back button confusion ([#11740])
+* Fix Formula 1 2006 timing issue ([#11767])
+* Fixes and workarounds for some vertex range culling bugs that broke a few games ([#11785], [#11859]), and disable it on older GPUs ([#11712], [#11773], [#11787])
+* Android: Allow putting PSP storage on custom paths like SD cards ([#11812])
+* Corrected vocp instruction, fixing models in Artdink games ([#11822], [#11835])
+* Bundle SDL in binary for macOS builds ([#11831])
+* Prevent keeping games open on Windows ([#11842])
 
 What's new in 1.7.3/1.7.4/1.7.5
 -------------------
@@ -154,20 +192,20 @@ What's new in 1.7.2
 What's new in 1.7.1
 -------------------
 * Minor crashfixes, lang updates
-* Save bug fixed ([#11508][])
+* Save bug fixed ([#11508])
 
 What's new in 1.7.0
 -------------------
-* Fix for insta-crash on Galaxy Note 9, some Xiaomi devices, and the new nVidia Shield ([#11441][])
-* Vertex range culling on most platforms, fixes DTM: Race Driver and similar ([#11393][])
-* Major speed boost in some Gundam and Earth Defense Force games ([#10973][])
-* Fix for issues with post processing shaders in GL 3+ ([#11182][])
-* Fixes to sound output switching on Windows (WASAPI) ([#11438][])
-* Detects DirectInput devices when running ([#11461][])
-* Simple Discord integration ([#11307][])
-* New debugging APIs ([#10909][])
-* Task switching made a lot more robust (fixes GPD XD problems) ([#11447][])
-* Texture decoding optimizations ([#11350][])
+* Fix for insta-crash on Galaxy Note 9, some Xiaomi devices, and the new nVidia Shield ([#11441])
+* Vertex range culling on most platforms, fixes DTM: Race Driver and similar ([#11393])
+* Major speed boost in some Gundam and Earth Defense Force games ([#10973])
+* Fix for issues with post processing shaders in GL 3+ ([#11182])
+* Fixes to sound output switching on Windows (WASAPI) ([#11438])
+* Detects DirectInput devices when running ([#11461])
+* Simple Discord integration ([#11307])
+* New debugging APIs ([#10909])
+* Task switching made a lot more robust (fixes GPD XD problems) ([#11447])
+* Texture decoding optimizations ([#11350])
 * Tons and tons of miscellaneous bugfixes and compatibility fixes
 
 Looking for [older news](history.md)?
@@ -182,6 +220,8 @@ Credit goes to:
  - [coldbird's code](https://code.google.com/archive/p/aemu/)
  - Kyhel
 
+
+[comment]: # (LINK_LIST_BEGIN_HERE)
 [#13125]: https://github.com/hrydgard/ppsspp/issues/13125 "Refactor and fix touch control layout screen for notch"
 [#13094]: https://github.com/hrydgard/ppsspp/issues/13094 "Camera initialization crash fix"
 [#13093]: https://github.com/hrydgard/ppsspp/issues/13093 "Add a try/catch to Android camera device listing."
@@ -341,3 +381,40 @@ Credit goes to:
 [#10909]: https://github.com/hrydgard/ppsspp/issues/10909 "WebSocket based debugger interface"
 [#11447]: https://github.com/hrydgard/ppsspp/issues/11447 "Avoid calling any GL calls during shutdown on Android. Should help #11063"
 [#11350]: https://github.com/hrydgard/ppsspp/issues/11350 "TexCache: Optimize DXT3/DXT5 decode to single pass"
+[#13636]: https://github.com/hrydgard/ppsspp/issues/13636 "Reinterpret framebuffer formats as needed. Outrun reflections partial fix"
+[#13640]: https://github.com/hrydgard/ppsspp/issues/13640 "Fix car reflections in Outrun"
+[#13760]: https://github.com/hrydgard/ppsspp/issues/13760 "Fix car lighting issues in DiRT 2."
+[#7124]: https://github.com/hrydgard/ppsspp/issues/7124 "Yu-Gi-Oh! GX Tag Force Card summoning (card cut-off / cropped)"
+[#11795]: https://github.com/hrydgard/ppsspp/issues/11795 "Exception handler - catch bad memory accesses"
+[#13092]: https://github.com/hrydgard/ppsspp/issues/13092 "Bad memory access handling improvements"
+[#13172]: https://github.com/hrydgard/ppsspp/issues/13172 "Generalized multi-instance"
+[#13897]: https://github.com/hrydgard/ppsspp/issues/13897 "LittleBigPlanet - Game Not Loading, Blue Screen (iOS, Unplayable)"
+[#13239]: https://github.com/hrydgard/ppsspp/issues/13239 "Add sound effects for PPSSPP interface navigation"
+[#13792]: https://github.com/hrydgard/ppsspp/issues/13792 "Fix UWP audio and a hang bug"
+[#12336]: https://github.com/hrydgard/ppsspp/issues/12336 "Microphone support"
+[#13706]: https://github.com/hrydgard/ppsspp/issues/13706 "Add back the old implementation of vfpu_sin/cos/sincos."
+[#13526]: https://github.com/hrydgard/ppsspp/issues/13526 "VFPU: Compute sines and cosines in double precision."
+[#13235]: https://github.com/hrydgard/ppsspp/issues/13235 "Vulkan: Allow custom texture upscaling shaders"
+[#13514]: https://github.com/hrydgard/ppsspp/issues/13514 "Vulkan: Automatically generate mipmaps for replaced/scaled textures"
+[#13986]: https://github.com/hrydgard/ppsspp/issues/13986 "Vulkan: Add MMPX upscaling texture shader"
+[#13355]: https://github.com/hrydgard/ppsspp/issues/13355 "Refactor framebuffer attachment. Fixes Test Drive Unlimited performance"
+[#13866]: https://github.com/hrydgard/ppsspp/issues/13866 "SaveState: Allow rewind on mobile"
+[#13695]: https://github.com/hrydgard/ppsspp/issues/13695 "Add developer setting \"Show on-screen messages\". Uncheck to hide them."
+[#13654]: https://github.com/hrydgard/ppsspp/issues/13654 "Expose the \"Lower resolution for effects\" setting in libretro."
+[#12924]: https://github.com/hrydgard/ppsspp/issues/12924 "Postprocessing: User chain support"
+[#13335]: https://github.com/hrydgard/ppsspp/issues/13335 "Support for loading game-specific plugins"
+[#12761]: https://github.com/hrydgard/ppsspp/issues/12761 "[Android][OpenGL&Vulkan][Save issue] Assassin's Creed : Bloodlines (ULJM05571)"
+[#5213]: https://github.com/hrydgard/ppsspp/issues/5213 "Hanayaka Nari Wa ga Ichizoku strange MP3 mono voice"
+[#9523]: https://github.com/hrydgard/ppsspp/issues/9523 "Namco Museum - Battle Collection - ULUS100035 loading problem"
+[#13297]: https://github.com/hrydgard/ppsspp/issues/13297 "Namco Museum Vol. 2 - ULJS00047 infinite loading in some game"
+[#13298]: https://github.com/hrydgard/ppsspp/issues/13298 "Fix sceKernelExitThread"
+[#6025]: https://github.com/hrydgard/ppsspp/issues/6025 "Dream Club Portable crash after select girl"
+[#4671]: https://github.com/hrydgard/ppsspp/issues/4671 "Capcom Classic Collection Reloaded stuck in return game"
+[#8526]: https://github.com/hrydgard/ppsspp/issues/8526 "Xyanide Resurrection freezing"
+[#13204]: https://github.com/hrydgard/ppsspp/issues/13204 "Dissidia Final Fantasy Chinese patch invalid address"
+[#13368]: https://github.com/hrydgard/ppsspp/issues/13368 "Reschedule after resuming thread from suspend."
+[#13969]: https://github.com/hrydgard/ppsspp/issues/13969 "Io: Don't allow async close while async busy"
+[#13633]: https://github.com/hrydgard/ppsspp/issues/13633 "Downstream Panic (US) New Game crashes"
+[#13667]: https://github.com/hrydgard/ppsspp/issues/13667 "Dynasty Warriors Multi Raid 2: Online questions"
+[#13262]: https://github.com/hrydgard/ppsspp/issues/13262 "Implement texturing from depth buffers (Vulkan only so far)"
+[#13556]: https://github.com/hrydgard/ppsspp/issues/13556 "D3D11 depth texture support"

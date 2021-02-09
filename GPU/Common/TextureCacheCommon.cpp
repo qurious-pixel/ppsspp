@@ -569,6 +569,10 @@ std::vector<AttachCandidate> TextureCacheCommon::GetFramebufferCandidates(const 
 	std::vector<AttachCandidate> candidates;
 
 	FramebufferNotificationChannel channel = Memory::IsDepthTexVRAMAddress(entry.addr) ? FramebufferNotificationChannel::NOTIFY_FB_DEPTH : FramebufferNotificationChannel::NOTIFY_FB_COLOR;
+	if (channel == FramebufferNotificationChannel::NOTIFY_FB_DEPTH && !gstate_c.Supports(GPU_SUPPORTS_DEPTH_TEXTURE)) {
+		// Depth texture not supported. Don't try to match it, fall back to the memory behind..
+		return std::vector<AttachCandidate>();
+	}
 
 	const std::vector<VirtualFramebuffer *> &framebuffers = framebufferManager_->Framebuffers();
 
@@ -611,6 +615,8 @@ int TextureCacheCommon::GetBestCandidateIndex(const std::vector<AttachCandidate>
 		switch (candidate.match.match) {
 		case FramebufferMatch::VALID:
 			relevancy += 1000;
+			break;
+		default:
 			break;
 		}
 
@@ -787,6 +793,8 @@ void TextureCacheCommon::NotifyFramebuffer(VirtualFramebuffer *framebuffer, Fram
 		}
 		break;
 	}
+	default:
+		break;
 	}
 }
 
@@ -954,10 +962,9 @@ void TextureCacheCommon::SetTextureFramebuffer(const AttachCandidate &candidate)
 	FramebufferMatchInfo fbInfo = candidate.match;
 
 	if (candidate.match.reinterpret) {
-		// TODO: Kinda ugly, maybe switch direction of the call?
 		GEBufferFormat oldFormat = candidate.fb->format;
 		candidate.fb->format = candidate.match.reinterpretTo;
-		framebufferManager_->ReinterpretFramebufferFrom(candidate.fb, oldFormat);
+		framebufferManager_->ReinterpretFramebuffer(candidate.fb, oldFormat, candidate.match.reinterpretTo);
 	}
 
 	_dbg_assert_msg_(framebuffer != nullptr, "Framebuffer must not be null.");
@@ -1055,7 +1062,7 @@ void TextureCacheCommon::NotifyConfigChanged() {
 		scaleFactor = g_Config.iTexScalingLevel;
 	}
 
-	if (!gstate_c.Supports(GPU_SUPPORTS_OES_TEXTURE_NPOT)) {
+	if (!gstate_c.Supports(GPU_SUPPORTS_TEXTURE_NPOT)) {
 		// Reduce the scale factor to a power of two (e.g. 2 or 4) if textures must be a power of two.
 		while ((scaleFactor & (scaleFactor - 1)) != 0) {
 			--scaleFactor;

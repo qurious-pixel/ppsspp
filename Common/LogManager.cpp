@@ -156,6 +156,9 @@ LogManager::~LogManager() {
 #endif
 	}
 
+	// Make sure we don't shutdown while logging.  RemoveListener locks too, but there are gaps.
+	std::lock_guard<std::mutex> listeners_lock(listeners_lock_);
+
 	if (fileLog_)
 		delete fileLog_;
 #if !defined(MOBILE_DEVICE) || defined(_DEBUG)
@@ -262,6 +265,7 @@ bool LogManager::IsEnabled(LogTypes::LOG_LEVELS level, LogTypes::LOG_TYPE type) 
 }
 
 void LogManager::Init(bool *enabledSetting) {
+	_assert_(logManager_ == nullptr);
 	logManager_ = new LogManager(enabledSetting);
 }
 
@@ -304,8 +308,10 @@ void FileLogListener::Log(const LogMessage &message) {
 }
 
 void OutputDebugStringLogListener::Log(const LogMessage &message) {
+	char buffer[4096];
+	snprintf(buffer, sizeof(buffer), "%s %s %s", message.timestamp, message.header, message.msg.c_str());
 #if _MSC_VER
-	OutputDebugStringUTF8(message.msg.c_str());
+	OutputDebugStringUTF8(buffer);
 #endif
 }
 

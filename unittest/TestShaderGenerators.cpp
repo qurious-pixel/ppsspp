@@ -1,3 +1,4 @@
+#include "ppsspp_config.h"
 #include <algorithm>
 
 #include "Common/StringUtils.h"
@@ -13,73 +14,75 @@
 #include "GPU/Common/VertexShaderGenerator.h"
 #include "GPU/Common/ReinterpretFramebuffer.h"
 
+#if PPSSPP_PLATFORM(WINDOWS)
 #include "GPU/D3D11/D3D11Util.h"
 #include "GPU/D3D11/D3D11Loader.h"
 
 #include "GPU/D3D9/D3DCompilerLoader.h"
 #include "GPU/D3D9/D3D9ShaderCompiler.h"
+#endif
 
-bool GenerateFShader(FShaderID id, char *buffer, ShaderLanguage lang, std::string *errorString) {
+bool GenerateFShader(FShaderID id, char *buffer, ShaderLanguage lang, Draw::Bugs bugs, std::string *errorString) {
 	uint64_t uniformMask;
 	switch (lang) {
 	case ShaderLanguage::GLSL_VULKAN:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::GLSL_VULKAN);
-		return GenerateFragmentShader(id, buffer, compat, &uniformMask, errorString);
+		return GenerateFragmentShader(id, buffer, compat, bugs, &uniformMask, errorString);
 	}
 	case ShaderLanguage::GLSL_1xx:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::GLSL_1xx);
-		return GenerateFragmentShader(id, buffer, compat, &uniformMask, errorString);
+		return GenerateFragmentShader(id, buffer, compat, bugs, &uniformMask, errorString);
 	}
 	case ShaderLanguage::GLSL_3xx:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::GLSL_1xx);
-		return GenerateFragmentShader(id, buffer, compat, &uniformMask, errorString);
+		return GenerateFragmentShader(id, buffer, compat, bugs, &uniformMask, errorString);
 	}
 	case ShaderLanguage::HLSL_D3D9:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::HLSL_D3D9);
-		return GenerateFragmentShader(id, buffer, compat, &uniformMask, errorString);
+		return GenerateFragmentShader(id, buffer, compat, bugs, &uniformMask, errorString);
 	}
 	case ShaderLanguage::HLSL_D3D11:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::HLSL_D3D11);
-		return GenerateFragmentShader(id, buffer, compat, &uniformMask, errorString);
+		return GenerateFragmentShader(id, buffer, compat, bugs, &uniformMask, errorString);
 	}
 	default:
 		return false;
 	}
 }
 
-bool GenerateVShader(VShaderID id, char *buffer, ShaderLanguage lang, std::string *errorString) {
+bool GenerateVShader(VShaderID id, char *buffer, ShaderLanguage lang, Draw::Bugs bugs, std::string *errorString) {
 	uint32_t attrMask;
 	uint64_t uniformMask;
 	switch (lang) {
 	case ShaderLanguage::GLSL_VULKAN:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::GLSL_VULKAN);
-		return GenerateVertexShader(id, buffer, compat, &attrMask, &uniformMask, errorString);
+		return GenerateVertexShader(id, buffer, compat, bugs, &attrMask, &uniformMask, errorString);
 	}
 	case ShaderLanguage::GLSL_1xx:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::GLSL_1xx);
-		return GenerateVertexShader(id, buffer, compat, &attrMask, &uniformMask, errorString);
+		return GenerateVertexShader(id, buffer, compat, bugs, &attrMask, &uniformMask, errorString);
 	}
 	case ShaderLanguage::GLSL_3xx:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::GLSL_1xx);
-		return GenerateVertexShader(id, buffer, compat, &attrMask, &uniformMask, errorString);
+		return GenerateVertexShader(id, buffer, compat, bugs, &attrMask, &uniformMask, errorString);
 	}
 	case ShaderLanguage::HLSL_D3D9:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::HLSL_D3D9);
-		return GenerateVertexShader(id, buffer, compat, &attrMask, &uniformMask, errorString);
+		return GenerateVertexShader(id, buffer, compat, bugs, &attrMask, &uniformMask, errorString);
 	}
 	case ShaderLanguage::HLSL_D3D11:
 	{
 		ShaderLanguageDesc compat(ShaderLanguage::HLSL_D3D11);
-		return GenerateVertexShader(id, buffer, compat, &attrMask, &uniformMask, errorString);
+		return GenerateVertexShader(id, buffer, compat, bugs, &attrMask, &uniformMask, errorString);
 	}
 	default:
 		return false;
@@ -89,6 +92,7 @@ bool GenerateVShader(VShaderID id, char *buffer, ShaderLanguage lang, std::strin
 bool TestCompileShader(const char *buffer, ShaderLanguage lang, bool vertex, std::string *errorMessage) {
 	std::vector<uint32_t> spirv;
 	switch (lang) {
+#if PPSSPP_PLATFORM(WINDOWS)
 	case ShaderLanguage::HLSL_D3D11:
 	{
 		auto output = CompileShaderToBytecodeD3D11(buffer, strlen(buffer), vertex ? "vs_4_0" : "ps_4_0", 0);
@@ -104,6 +108,7 @@ bool TestCompileShader(const char *buffer, ShaderLanguage lang, bool vertex, std
 			return false;
 		}
 	}
+#endif
 
 	case ShaderLanguage::GLSL_VULKAN:
 		return GLSLtoSPV(vertex ? VK_SHADER_STAGE_VERTEX_BIT : VK_SHADER_STAGE_FRAGMENT_BIT, buffer, GLSLVariant::VULKAN, spirv, errorMessage);
@@ -234,6 +239,8 @@ bool TestVertexShaders() {
 	int successes = 0;
 	int count = 700;
 
+	Draw::Bugs bugs;
+
 	// Generate a bunch of random vertex shader IDs, try to generate shader source.
 	// Then compile it and check that it's ok.
 	for (int i = 0; i < count; i++) {
@@ -259,7 +266,7 @@ bool TestVertexShaders() {
 		std::string genErrorString[numLanguages];
 
 		for (int j = 0; j < numLanguages; j++) {
-			generateSuccess[j] = GenerateVShader(id, buffer[j], languages[j], &genErrorString[j]);
+			generateSuccess[j] = GenerateVShader(id, buffer[j], languages[j], bugs, &genErrorString[j]);
 			if (!genErrorString[j].empty()) {
 				printf("%s\n", genErrorString[j].c_str());
 			}
@@ -297,6 +304,8 @@ bool TestFragmentShaders() {
 	int successes = 0;
 	int count = 300;
 
+	Draw::Bugs bugs;
+
 	// Generate a bunch of random fragment shader IDs, try to generate shader source.
 	// Then compile it and check that it's ok.
 	for (int i = 0; i < count; i++) {
@@ -318,7 +327,7 @@ bool TestFragmentShaders() {
 		std::string genErrorString[numLanguages];
 
 		for (int j = 0; j < numLanguages; j++) {
-			generateSuccess[j] = GenerateFShader(id, buffer[j], languages[j], &genErrorString[j]);
+			generateSuccess[j] = GenerateFShader(id, buffer[j], languages[j], bugs, &genErrorString[j]);
 			if (!genErrorString[j].empty()) {
 				printf("%s\n", genErrorString[j].c_str());
 			}
@@ -348,9 +357,13 @@ bool TestFragmentShaders() {
 }
 
 bool TestShaderGenerators() {
+#if PPSSPP_PLATFORM(WINDOWS)
 	LoadD3D11();
 	init_glslang();
 	LoadD3DCompilerDynamic();
+#else
+	init_glslang();
+#endif
 
 	if (!TestFragmentShaders()) {
 		return false;

@@ -17,6 +17,7 @@ ARCH_FILES := \
   $(SRC)/Common/x64Emitter.cpp \
   $(SRC)/Common/x64Analyzer.cpp \
   $(SRC)/Common/CPUDetect.cpp \
+  $(SRC)/Common/Math/fast/fast_matrix_sse.c \
   $(SRC)/Common/Thunk.cpp \
   $(SRC)/Core/MIPS/x86/CompALU.cpp \
   $(SRC)/Core/MIPS/x86/CompBranch.cpp \
@@ -39,6 +40,7 @@ ARCH_FILES := \
   $(SRC)/Common/x64Emitter.cpp \
   $(SRC)/Common/x64Analyzer.cpp \
   $(SRC)/Common/CPUDetect.cpp \
+  $(SRC)/Common/Math/fast/fast_matrix_sse.c \
   $(SRC)/Common/Thunk.cpp \
   $(SRC)/Core/MIPS/x86/CompALU.cpp \
   $(SRC)/Core/MIPS/x86/CompBranch.cpp \
@@ -62,6 +64,7 @@ ARCH_FILES := \
   $(SRC)/Common/ArmEmitter.cpp \
   $(SRC)/Common/ArmCPUDetect.cpp \
   $(SRC)/Common/ColorConvNEON.cpp.neon \
+  $(SRC)/Common/Math/fast/fast_matrix_neon.S.neon \
   $(SRC)/Core/MIPS/ARM/ArmCompALU.cpp \
   $(SRC)/Core/MIPS/ARM/ArmCompBranch.cpp \
   $(SRC)/Core/MIPS/ARM/ArmCompFPU.cpp \
@@ -76,6 +79,9 @@ ARCH_FILES := \
   $(SRC)/Core/MIPS/ARM/ArmRegCacheFPU.cpp \
   $(SRC)/GPU/Common/VertexDecoderArm.cpp \
   $(SRC)/ext/disarm.cpp \
+  $(SRC)/ext/libpng17/arm/arm_init.c \
+  $(SRC)/ext/libpng17/arm/filter_neon_intrinsics.c \
+  $(SRC)/ext/libpng17/arm/filter_neon.S.neon \
   ArmEmitterTest.cpp
 endif
 
@@ -346,7 +352,6 @@ EXEC_AND_LIB_FILES := \
   $(SRC)/GPU/GLES/ShaderManagerGLES.cpp.arm \
   $(SRC)/GPU/GLES/FragmentTestCacheGLES.cpp.arm \
   $(SRC)/GPU/GLES/TextureScalerGLES.cpp \
-  $(SRC)/GPU/Null/NullGpu.cpp \
   $(SRC)/GPU/Software/Clipper.cpp \
   $(SRC)/GPU/Software/Lighting.cpp \
   $(SRC)/GPU/Software/Rasterizer.cpp.arm \
@@ -408,6 +413,8 @@ EXEC_AND_LIB_FILES := \
   $(SRC)/Core/Debugger/WebSocket/GPUBufferSubscriber.cpp \
   $(SRC)/Core/Debugger/WebSocket/GPURecordSubscriber.cpp \
   $(SRC)/Core/Debugger/WebSocket/HLESubscriber.cpp \
+  $(SRC)/Core/Debugger/WebSocket/InputBroadcaster.cpp \
+  $(SRC)/Core/Debugger/WebSocket/InputSubscriber.cpp \
   $(SRC)/Core/Debugger/WebSocket/LogBroadcaster.cpp \
   $(SRC)/Core/Debugger/WebSocket/MemorySubscriber.cpp \
   $(SRC)/Core/Debugger/WebSocket/SteppingBroadcaster.cpp \
@@ -621,18 +628,6 @@ LOCAL_SRC_FILES := \
 
 ifeq ($(findstring armeabi-v7a,$(TARGET_ARCH_ABI)),armeabi-v7a)
 LOCAL_CFLAGS := $(LOCAL_CFLAGS) -DARM
-LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
-    $(SRC)/Common/Math/fast/fast_matrix_neon.S.neon \
-    $(SRC)/ext/libpng17/arm/arm_init.c \
-    $(SRC)/ext/libpng17/arm/filter_neon_intrinsics.c \
-    $(SRC)/ext/libpng17/arm/filter_neon.S.neon
-
-else ifeq ($(TARGET_ARCH_ABI),x86)
-LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
-    $(SRC)/Common/Math/fast/fast_matrix_sse.c
-else ifeq ($(TARGET_ARCH_ABI),x86_64)
-LOCAL_SRC_FILES := $(LOCAL_SRC_FILES) \
-    $(SRC)/Common/Math/fast/fast_matrix_sse.c
 endif
 
 ifneq ($(SKIPAPP),1)
@@ -685,6 +680,7 @@ ifeq ($(UNITTEST),1)
   LOCAL_MODULE := ppsspp_unittest
   LOCAL_SRC_FILES := \
     $(SRC)/unittest/JitHarness.cpp \
+    $(SRC)/unittest/TestShaderGenerators.cpp \
     $(SRC)/unittest/TestVertexJit.cpp \
     $(TESTARMEMITTER_FILE) \
     $(SRC)/unittest/UnitTest.cpp
@@ -695,10 +691,6 @@ endif
 $(call import-module,libzip)
 $(call import-module,glslang-build)
 $(call import-module,miniupnp-build)
-
-ifeq ($(ANDROID_NDK_PROFILER),1)
-  $(call import-module,android-ndk-profiler)
-endif
 
 jni/$(SRC)/git-version.cpp:
 	-./git-version-gen.sh

@@ -128,16 +128,19 @@ bool isPDPPortInUse(uint16_t port) {
 	return false;
 }
 
-bool isPTPPortInUse(uint16_t port, bool forListen) {
+bool isPTPPortInUse(uint16_t port, bool forListen, SceNetEtherAddr* dstmac, uint16_t dstport) {
 	// Iterate Sockets
 	for (int i = 0; i < MAX_SOCKET; i++) {
 		auto sock = adhocSockets[i];
 		if (sock != NULL && sock->type == SOCK_PTP)
-			// It's allowed to Listen and Open the same PTP port, But it's not allowed to Listen or Open the same PTP port twice.
-			if (sock->data.ptp.lport == port && 
-				((forListen && sock->data.ptp.state == ADHOC_PTP_STATE_LISTEN) || 
-				(!forListen && sock->data.ptp.state != ADHOC_PTP_STATE_LISTEN)))
+			// It's allowed to Listen and Open the same PTP port, But it's not allowed to Listen or Open the same PTP port twice (unless destination mac or port are different).
+			if (sock->data.ptp.lport == port &&
+			    ((forListen && sock->data.ptp.state == ADHOC_PTP_STATE_LISTEN) ||
+			     (!forListen && sock->data.ptp.state != ADHOC_PTP_STATE_LISTEN && 
+			      sock->data.ptp.pport == dstport && dstmac != nullptr && isMacMatch(&sock->data.ptp.paddr, dstmac)))) 
+			{
 				return true;
+			}
 	}
 	// Unused Port
 	return false;
@@ -1136,18 +1139,18 @@ void AfterMatchingMipsCall::SetData(int ContextID, int eventId, u32_le BufAddr) 
 
 bool SetMatchingInCallback(SceNetAdhocMatchingContext* context, bool IsInCB) {
 	if (context == NULL) return false;
-	context->eventlock->lock(); //peerlock.lock();
+	peerlock.lock();
 	context->IsMatchingInCB = IsInCB;
-	context->eventlock->unlock(); //peerlock.unlock();
+	peerlock.unlock();
 	return IsInCB;
 }
 
 bool IsMatchingInCallback(SceNetAdhocMatchingContext* context) {
 	bool inCB = false;
 	if (context == NULL) return inCB;
-	context->eventlock->lock(); //peerlock.lock();
+	peerlock.lock();
 	inCB = (context->IsMatchingInCB);
-	context->eventlock->unlock(); //peerlock.unlock();
+	peerlock.unlock();
 	return inCB;
 }
 
@@ -1203,18 +1206,24 @@ void notifyAdhocctlHandlers(u32 flag, u32 error) {
 // Note: Must not lock peerlock within this function to prevent race-condition with other thread whos owning peerlock and trying to lock context->eventlock owned by this thread
 void notifyMatchingHandler(SceNetAdhocMatchingContext * context, ThreadMessage * msg, void * opt, u32_le &bufAddr, u32_le &bufLen, u32_le * args) {
 	// Don't share buffer address space with other mipscall in the queue since mipscalls aren't immediately executed
-	MatchingArgs argsNew;
+	MatchingArgs argsNew = { 0 };
 	u32_le dataBufLen = msg->optlen + 8; //max(bufLen, msg->optlen + 8);
 	u32_le dataBufAddr = userMemory.Alloc(dataBufLen); // We will free this memory after returning from mipscall
 	uint8_t * dataPtr = Memory::GetPointer(dataBufAddr);
-	memcpy(dataPtr, &msg->mac, sizeof(msg->mac));
-	if (msg->optlen > 0) 
-		memcpy(dataPtr + 8, opt, msg->optlen);
-	argsNew.data[0] = context->id;
-	argsNew.data[1] = msg->opcode;
-	argsNew.data[2] = dataBufAddr;
-	argsNew.data[3] = msg->optlen;
-	argsNew.data[4] = dataBufAddr + 8; // OptData Addr
+	if (dataPtr) {
+		memcpy(dataPtr, &msg->mac, sizeof(msg->mac));
+		if (msg->optlen > 0)
+			memcpy(dataPtr + 8, opt, msg->optlen);
+		
+		argsNew.data[1] = msg->opcode;
+		argsNew.data[2] = dataBufAddr;
+		argsNew.data[3] = msg->optlen;
+		argsNew.data[4] = dataBufAddr + 8; // OptData Addr
+	}
+	else {
+		argsNew.data[1] = PSP_ADHOC_MATCHING_EVENT_ERROR; // not sure where to put the error code for EVENT_ERROR tho
+	}
+	argsNew.data[0] = context->id;	
 	argsNew.data[5] = context->handler.entryPoint; //not part of callback argument, just borrowing a space to store callback address so i don't need to search the context first later
 	
 	// ScheduleEvent_Threadsafe_Immediate seems to get mixed up with interrupt (returning from mipscall inside an interrupt) and getting invalid address before returning from interrupt
@@ -1887,13 +1896,25 @@ uint16_t getLocalPort(int sock) {
 	return ntohs(localAddr.sin_port);
 }
 
-u_long getAvailToRecv(int sock) {
+u_long getAvailToRecv(int sock, int udpBufferSize) {
 	u_long n = 0; // Typical MTU size is 1500
+	int err = -1;
 #if defined(_WIN32) // May not be available on all platform
-	ioctlsocket(sock, FIONREAD, &n);
+	err = ioctlsocket(sock, FIONREAD, &n);
 #else
-	ioctl(sock, FIONREAD, &n);
+	err = ioctl(sock, FIONREAD, &n);
 #endif
+	if (err < 0)
+		return 0;
+
+	if (udpBufferSize > 0 && n > 0) {
+		// TODO: Cap number of bytes of full DGRAM message(s) up to buffer size
+		char buf[8];
+		// Each recv can only received one message, not sure how to read the next pending msg without actually receiving the first one
+		err = recvfrom(sock, buf, sizeof(buf), MSG_PEEK | MSG_NOSIGNAL | MSG_TRUNC, NULL, NULL);
+		if (err >= 0)
+			return (u_long)err;
+	}
 	return n;
 }
 
@@ -1918,6 +1939,11 @@ int setSockBufferSize(int sock, int opt, int size) { // opt = SO_RCVBUF/SO_SNDBU
 	return setsockopt(sock, SOL_SOCKET, opt, (char *)&n, sizeof(n));
 }
 
+int setSockMSS(int sock, int size) {
+	int mss = size; // 1460;
+	return setsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, (char*)&mss, sizeof(mss));
+}
+
 int setSockTimeout(int sock, int opt, unsigned long timeout_usec) { // opt = SO_SNDTIMEO/SO_RCVTIMEO
 	if (timeout_usec > 0 && timeout_usec < minSocketTimeoutUS) timeout_usec = minSocketTimeoutUS; // Override timeout for high latency multiplayer
 #if defined(_WIN32)
@@ -1940,8 +1966,21 @@ int getSockNoDelay(int tcpsock) {
 	return opt;
 }
 
+//#define TCP_QUICKACK     0x0c
 int setSockNoDelay(int tcpsock, int flag) {
 	int opt = flag;
+	// Disable ACK Delay when supported
+#if defined(TCP_QUICKACK)
+	setsockopt(tcpsock, IPPROTO_TCP, TCP_QUICKACK, (char*)&opt, sizeof(opt));
+#elif defined(_WIN32)
+#if !defined(SIO_TCP_SET_ACK_FREQUENCY)
+	#define SIO_TCP_SET_ACK_FREQUENCY _WSAIOW(IOC_VENDOR,23)
+#endif
+	int freq = flag? 1:2; // can be 1..255, default is 2 (delayed 200ms)
+	DWORD retbytes = 0;
+	WSAIoctl(tcpsock, SIO_TCP_SET_ACK_FREQUENCY, &freq, sizeof(freq), NULL, 0, &retbytes, NULL, NULL);
+#endif
+	// Disable Nagle Algo
 	return setsockopt(tcpsock, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt));
 }
 
@@ -1962,6 +2001,19 @@ int setSockReuseAddrPort(int sock) {
 	setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (const char*)&opt, sizeof(opt));
 #endif
 	return setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
+}
+
+int setUDPConnReset(int udpsock, bool enabled) {
+	// On Windows: Connection Reset error on UDP could cause a strange behavior https://stackoverflow.com/questions/34242622/windows-udp-sockets-recvfrom-fails-with-error-10054
+#if defined(_WIN32)
+#if !defined(SIO_UDP_CONNRESET)
+#define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR, 12)
+#endif
+	BOOL bNewBehavior = enabled;
+	DWORD dwBytesReturned = 0;
+	return WSAIoctl(udpsock, SIO_UDP_CONNRESET, &bNewBehavior, sizeof bNewBehavior, NULL, 0, &dwBytesReturned, NULL, NULL);
+#endif
+	return -1;
 }
 
 #if !defined(TCP_KEEPIDLE)

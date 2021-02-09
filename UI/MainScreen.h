@@ -38,6 +38,8 @@ enum class BrowseFlags {
 };
 ENUM_CLASS_BITOPS(BrowseFlags);
 
+bool LaunchFile(ScreenManager *screenManager, std::string path);
+
 class GameBrowser : public UI::LinearLayout {
 public:
 	GameBrowser(std::string path, BrowseFlags browseFlags, bool *gridStyle, ScreenManager *screenManager, std::string lastText, std::string lastLink, UI::LayoutParams *layoutParams = nullptr);
@@ -68,6 +70,8 @@ private:
 	UI::EventReturn NavigateClick(UI::EventParams &e);
 	UI::EventReturn LayoutChange(UI::EventParams &e);
 	UI::EventReturn LastClick(UI::EventParams &e);
+	UI::EventReturn BrowseClick(UI::EventParams &e);
+	UI::EventReturn StorageClick(UI::EventParams &e);
 	UI::EventReturn HomeClick(UI::EventParams &e);
 	UI::EventReturn PinToggleClick(UI::EventParams &e);
 	UI::EventReturn GridSettingsClick(UI::EventParams &e);
@@ -123,9 +127,11 @@ protected:
 	UI::EventReturn OnDownloadUpgrade(UI::EventParams &e);
 	UI::EventReturn OnDismissUpgrade(UI::EventParams &e);
 	UI::EventReturn OnAllowStorage(UI::EventParams &e);
+	UI::EventReturn OnFullScreenToggle(UI::EventParams &e);
 
 	UI::LinearLayout *upgradeBar_ = nullptr;
 	UI::TabHolder *tabHolder_ = nullptr;
+	UI::Button *fullscreenButton_ = nullptr;
 
 	std::string restoreFocusGamePath_;
 	std::vector<GameBrowser *> gameBrowsers_;
@@ -138,6 +144,7 @@ protected:
 	bool lockBackgroundAudio_ = false;
 	bool lastVertical_;
 	bool confirmedTemporary_ = false;
+	UI::ScrollView *scrollAllGames_ = nullptr;
 
 	friend class RemoteISOBrowseScreen;
 };

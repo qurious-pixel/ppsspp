@@ -149,6 +149,23 @@ std::string System_GetProperty(SystemProperty prop) {
 	}
 }
 
+std::vector<std::string> System_GetPropertyStringVec(SystemProperty prop) {
+	std::vector<std::string> result;
+	switch (prop) {
+	case SYSPROP_TEMP_DIRS:
+		if (getenv("TMPDIR") && strlen(getenv("TMPDIR")) != 0)
+			result.push_back(getenv("TMPDIR"));
+		if (getenv("TMP") && strlen(getenv("TMP")) != 0)
+			result.push_back(getenv("TMP"));
+		if (getenv("TEMP") && strlen(getenv("TEMP")) != 0)
+			result.push_back(getenv("TEMP"));
+		return result;
+
+	default:
+		return result;
+	}
+}
+
 int System_GetPropertyInt(SystemProperty prop) {
 	switch (prop) {
 #if defined(SDL)
@@ -199,6 +216,7 @@ bool System_GetPropertyBool(SystemProperty prop) {
 	case SYSPROP_HAS_BACK_BUTTON:
 		return true;
 	case SYSPROP_HAS_FILE_BROWSER:
+	case SYSPROP_HAS_FOLDER_BROWSER:
 		return true;
 	case SYSPROP_APP_GOLD:
 #ifdef GOLD
@@ -533,17 +551,19 @@ void MainUI::initializeGL() {
 		g_Config.iGPUBackend = (int)GPUBackend::OPENGL;
 	}
 
-	SetGLCoreContext(format().profile() == QGLFormat::CoreProfile);
+	bool useCoreContext = format().profile() == QGLFormat::CoreProfile;
+
+	SetGLCoreContext(useCoreContext);
 
 #ifndef USING_GLES2
 	// Some core profile drivers elide certain extensions from GL_EXTENSIONS/etc.
 	// glewExperimental allows us to force GLEW to search for the pointers anyway.
-	if (gl_extensions.IsCoreContext) {
+	if (useCoreContext) {
 		glewExperimental = true;
 	}
 	glewInit();
 	// Unfortunately, glew will generate an invalid enum error, ignore.
-	if (gl_extensions.IsCoreContext) {
+	if (useCoreContext) {
 		glGetError();
 	}
 #endif

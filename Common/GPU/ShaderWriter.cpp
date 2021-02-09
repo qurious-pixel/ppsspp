@@ -12,10 +12,9 @@ const char *vulkan_glsl_preamble_fs =
 "#extension GL_ARB_conservative_depth : enable\n"
 "#extension GL_ARB_shader_image_load_store : enable\n"
 "#define splat3(x) vec3(x)\n"
-"#define lowp\n"
-"#define mediump\n"
-"#define highp\n"
 "#define DISCARD discard\n"
+"precision lowp float;\n"
+"precision highp int;\n"
 "\n";
 
 const char *hlsl_preamble_fs =
@@ -48,9 +47,7 @@ const char *vulkan_glsl_preamble_vs =
 "#extension GL_ARB_shading_language_420pack : enable\n"
 "#define mul(x, y) ((x) * (y))\n"
 "#define splat3(x) vec3(x)\n"
-"#define lowp\n"
-"#define mediump\n"
-"#define highp\n"
+"precision highp float;\n"
 "\n";
 
 const char *hlsl_preamble_vs =
@@ -86,6 +83,8 @@ void ShaderWriter::Preamble(const char **gl_extensions, size_t num_gl_extensions
 		case ShaderStage::Fragment:
 			W(vulkan_glsl_preamble_fs);
 			break;
+		default:
+			break;
 		}
 		break;
 	case HLSL_D3D11:
@@ -102,6 +101,8 @@ void ShaderWriter::Preamble(const char **gl_extensions, size_t num_gl_extensions
 				W(hlsl_d3d11_preamble_fs);
 			}
 			break;
+		default:
+			break;
 		}
 		break;
 	default:  // OpenGL
@@ -110,6 +111,8 @@ void ShaderWriter::Preamble(const char **gl_extensions, size_t num_gl_extensions
 		for (size_t i = 0; i < num_gl_extensions; i++) {
 			F("%s\n", gl_extensions[i]);
 		}
+		// Print some system info - useful to gather information directly from screenshots.
+		F("// %s\n", lang_.driverInfo);
 		switch (stage_) {
 		case ShaderStage::Fragment:
 			C("#define DISCARD discard\n");
@@ -125,6 +128,8 @@ void ShaderWriter::Preamble(const char **gl_extensions, size_t num_gl_extensions
 				C("precision highp float;\n");
 			}
 			C("#define gl_VertexIndex gl_VertexID\n");
+			break;
+		default:
 			break;
 		}
 		if (!lang_.gles) {
@@ -165,13 +170,14 @@ void ShaderWriter::BeginVSMain(Slice<InputDef> inputs, Slice<UniformDef> uniform
 	}
 	case GLSL_VULKAN:
 		for (auto &varying : varyings) {
-			F("layout(location = %d) out %s %s;  // %s\n", varying.index, varying.type, varying.name, varying.semantic);
+			F("layout(location = %d) %s out %s %s;  // %s\n",
+				varying.index, varying.precision ? varying.precision : "", varying.type, varying.name, varying.semantic);
 		}
 		C("void main() {\n");
 		break;
 	default:  // OpenGL
 		for (auto &varying : varyings) {
-			F("%s %s %s;  // %s (%d)\n", lang_.varying_vs, varying.type, varying.name, varying.semantic, varying.index);
+			F("%s %s %s %s;  // %s (%d)\n", lang_.varying_vs, varying.precision ? varying.precision : "", varying.type, varying.name, varying.semantic, varying.index);
 		}
 		C("void main() {\n");
 		break;
@@ -199,7 +205,7 @@ void ShaderWriter::BeginFSMain(Slice<UniformDef> uniforms, Slice<VaryingDef> var
 		break;
 	case HLSL_D3D9:
 		for (auto &uniform : uniforms) {
-			F("  %s %s : %s;\n", uniform.type, uniform.name, uniform.index);
+			F("  %s %s : register(c%d);\n", uniform.type, uniform.name, uniform.index);
 		}
 		// Let's do the varyings as parameters to main, no struct.
 		C("vec4 main(");
@@ -213,14 +219,14 @@ void ShaderWriter::BeginFSMain(Slice<UniformDef> uniforms, Slice<VaryingDef> var
 		break;
 	case GLSL_VULKAN:
 		for (auto &varying : varyings) {
-			F("layout(location = %d) in %s %s;  // %s\n", varying.index, varying.type, varying.name,  varying.semantic);
+			F("layout(location = %d) %s in %s %s;  // %s\n", varying.index, varying.precision ? varying.precision : "", varying.type, varying.name,  varying.semantic);
 		}
-		C("layout (location = 0, index = 0) out vec4 fragColor0;\n");
+		C("layout(location = 0, index = 0) out vec4 fragColor0;\n");
 		C("\nvoid main() {\n");
 		break;
 	default:
 		for (auto &varying : varyings) {
-			F("%s %s %s;  // %s\n", lang_.varying_fs, varying.type, varying.name, varying.semantic);
+			F("%s %s %s %s;  // %s\n", lang_.varying_fs, varying.precision ? varying.precision : "", varying.type, varying.name, varying.semantic);
 		}
 		if (!strcmp(lang_.fragColor0, "fragColor0")) {
 			C("out vec4 fragColor0;\n");
@@ -264,6 +270,12 @@ void ShaderWriter::EndFSMain(const char *vec4_color_variable) {
 	C("}\n");
 }
 
+void ShaderWriter::HighPrecisionFloat() {
+	if ((ShaderLanguageIsOpenGL(lang_.shaderLanguage) && lang_.gles) || lang_.shaderLanguage == GLSL_VULKAN) {
+		C("precision highp float;\n");
+	}
+}
+
 void ShaderWriter::DeclareTexture2D(const char *name, int binding) {
 	switch (lang_.shaderLanguage) {
 	case HLSL_D3D11:
@@ -286,6 +298,8 @@ void ShaderWriter::DeclareSampler2D(const char *name, int binding) {
 	switch (lang_.shaderLanguage) {
 	case HLSL_D3D11:
 		F("SamplerState %s : register(s%d);\n", name, binding);
+		break;
+	default:
 		break;
 	}
 }

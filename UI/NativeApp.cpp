@@ -30,6 +30,7 @@
 
 #include <locale.h>
 #include <algorithm>
+#include <cstdlib>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -75,6 +76,7 @@
 #include "Common/MemArena.h"
 #include "Common/GraphicsContext.h"
 #include "Common/OSVersion.h"
+#include "Common/GPU/ShaderTranslation.h"
 
 #include "Core/Config.h"
 #include "Core/ConfigValues.h"
@@ -135,12 +137,6 @@ Atlas g_ui_atlas;
 #include "ios/iOSCoreAudio.h"
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
-#endif
-
-// https://github.com/richq/android-ndk-profiler
-#ifdef ANDROID_NDK_PROFILER
-#include <stdlib.h>
-#include "android/android-ndk-profiler/prof.h"
 #endif
 
 ScreenManager *screenManager;
@@ -444,6 +440,8 @@ static void ClearFailedGPUBackends() {
 void NativeInit(int argc, const char *argv[], const char *savegame_dir, const char *external_dir, const char *cache_dir) {
 	net::Init();  // This needs to happen before we load the config. So on Windows we also run it in Main. It's fine to call multiple times.
 
+	ShaderTranslationInit();
+
 	InitFastMath(cpu_info.bNEON);
 	SetupAudioFormats();
 
@@ -465,6 +463,9 @@ void NativeInit(int argc, const char *argv[], const char *savegame_dir, const ch
 #if defined(IOS)
 	// Packed assets are included in app
 	VFSRegister("", new DirectoryAssetReader(external_dir));
+#endif
+#if defined(ASSETS_DIR)
+	VFSRegister("", new DirectoryAssetReader(ASSETS_DIR));
 #endif
 #if !defined(MOBILE_DEVICE) && !defined(_WIN32) && !PPSSPP_PLATFORM(SWITCH)
 	VFSRegister("", new DirectoryAssetReader((File::GetExeDirectory() + "assets/").c_str()));
@@ -559,18 +560,24 @@ void NativeInit(int argc, const char *argv[], const char *savegame_dir, const ch
 
 	// Parse command line
 	LogTypes::LOG_LEVELS logLevel = LogTypes::LINFO;
+	bool forceLogLevel = false;
+	const auto setLogLevel = [&logLevel, &forceLogLevel](LogTypes::LOG_LEVELS level) {
+		logLevel = level;
+		forceLogLevel = true;
+	};
+
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
 			switch (argv[i][1]) {
 			case 'd':
 				// Enable debug logging
 				// Note that you must also change the max log level in Log.h.
-				logLevel = LogTypes::LDEBUG;
+				setLogLevel(LogTypes::LDEBUG);
 				break;
 			case 'v':
 				// Enable verbose logging
 				// Note that you must also change the max log level in Log.h.
-				logLevel = LogTypes::LVERBOSE;
+				setLogLevel(LogTypes::LVERBOSE);
 				break;
 			case 'j':
 				g_Config.iCpuCore = (int)CPUCore::JIT;
@@ -585,6 +592,8 @@ void NativeInit(int argc, const char *argv[], const char *savegame_dir, const ch
 				g_Config.bSaveSettings = false;
 				break;
 			case '-':
+				if (!strncmp(argv[i], "--loglevel=", strlen("--loglevel=")) && strlen(argv[i]) > strlen("--loglevel="))
+					setLogLevel(static_cast<LogTypes::LOG_LEVELS>(std::atoi(argv[i] + strlen("--loglevel="))));
 				if (!strncmp(argv[i], "--log=", strlen("--log=")) && strlen(argv[i]) > strlen("--log="))
 					fileToLog = argv[i] + strlen("--log=");
 				if (!strncmp(argv[i], "--state=", strlen("--state=")) && strlen(argv[i]) > strlen("--state="))
@@ -664,6 +673,9 @@ void NativeInit(int argc, const char *argv[], const char *savegame_dir, const ch
 
 	if (fileToLog)
 		LogManager::GetInstance()->ChangeFileLog(fileToLog);
+
+	if (forceLogLevel)
+		LogManager::GetInstance()->SetAllLogLevels(logLevel);
 
 	PostLoadConfig();
 
@@ -949,14 +961,12 @@ void NativeShutdownGraphics() {
 
 #if PPSSPP_PLATFORM(WINDOWS) && !PPSSPP_PLATFORM(UWP)
 	if (winCamera) {
-		winCamera->sendMessage({ CAPTUREDEVIDE_COMMAND::SHUTDOWN, nullptr });
-		while (!winCamera->isShutDown()) {};// Wait for shutting down.
+		winCamera->waitShutDown();
 		delete winCamera;
 		winCamera = nullptr;
 	}
 	if (winMic) {
-		winMic->sendMessage({ CAPTUREDEVIDE_COMMAND::SHUTDOWN, nullptr });
-		while (!winMic->isShutDown()) {};// Wait for shutting down.
+		winMic->waitShutDown();
 		delete winMic;
 		winMic = nullptr;
 	}
@@ -1399,14 +1409,6 @@ void NativeShutdown() {
 #endif
 	g_Config.Save("NativeShutdown");
 
-	// Avoid shutting this down when restarting core.
-	if (!restarting)
-		LogManager::Shutdown();
-
-#ifdef ANDROID_NDK_PROFILER
-	moncleanup();
-#endif
-
 	INFO_LOG(SYSTEM, "NativeShutdown called");
 
 	ShutdownWebServer();
@@ -1416,6 +1418,12 @@ void NativeShutdown() {
 	net::Shutdown();
 
 	g_Discord.Shutdown();
+
+	ShaderTranslationShutdown();
+
+	// Avoid shutting this down when restarting core.
+	if (!restarting)
+		LogManager::Shutdown();
 
 	if (logger) {
 		delete logger;

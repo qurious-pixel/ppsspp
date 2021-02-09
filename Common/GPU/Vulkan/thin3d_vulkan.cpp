@@ -215,7 +215,7 @@ bool VKShaderModule::Compile(VulkanContext *vulkan, ShaderLanguage language, con
 	std::vector<uint32_t> spirv;
 	std::string errorMessage;
 	if (!GLSLtoSPV(vkstage_, source_.c_str(), GLSLVariant::VULKAN, spirv, &errorMessage)) {
-		INFO_LOG(G3D, "Shader compile to module failed: %s", errorMessage.c_str());
+		WARN_LOG(G3D, "Shader compile to module failed: %s", errorMessage.c_str());
 		return false;
 	}
 
@@ -231,6 +231,7 @@ bool VKShaderModule::Compile(VulkanContext *vulkan, ShaderLanguage language, con
 	if (vulkan->CreateShaderModule(spirv, &module_)) {
 		ok_ = true;
 	} else {
+		WARN_LOG(G3D, "vkCreateShaderModule failed");
 		ok_ = false;
 	}
 	return ok_;
@@ -392,7 +393,9 @@ public:
 
 	// These functions should be self explanatory.
 	void BindFramebufferAsRenderTarget(Framebuffer *fbo, const RenderPassInfo &rp, const char *tag) override;
-	// color must be 0, for now.
+	Framebuffer *GetCurrentRenderTarget() override {
+		return curFramebuffer_;
+	}
 	void BindFramebufferAsTexture(Framebuffer *fbo, int binding, FBChannel channelBit, int attachment) override;
 
 	uintptr_t GetFramebufferAPITexture(Framebuffer *fbo, int channelBit, int attachment) override;
@@ -517,7 +520,7 @@ private:
 	VkDescriptorSetLayout descriptorSetLayout_ = VK_NULL_HANDLE;
 	VkPipelineLayout pipelineLayout_ = VK_NULL_HANDLE;
 	VkPipelineCache pipelineCache_ = VK_NULL_HANDLE;
-	VKFramebuffer *curFramebuffer_ = nullptr;
+	Framebuffer *curFramebuffer_ = nullptr;
 
 	VkDevice device_;
 	VkQueue queue_;
@@ -752,7 +755,7 @@ bool VKTexture::Create(VkCommandBuffer cmd, VulkanPushBuffer *push, const Textur
 		}
 		// Generate the rest of the mips automatically.
 		for (; i < mipLevels_; i++) {
-			vkTex_->GenerateMip(cmd, i);
+			vkTex_->GenerateMip(cmd, i, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		}
 	}
 	vkTex_->EndCreate(cmd, false);
@@ -1279,7 +1282,7 @@ ShaderModule *VKContext::CreateShaderModule(ShaderStage stage, ShaderLanguage la
 	if (shader->Compile(vulkan_, language, data, size)) {
 		return shader;
 	} else {
-		ERROR_LOG(G3D,  "Failed to compile shader: %s", (const char *)data);
+		ERROR_LOG(G3D,  "Failed to compile shader:\n%s", (const char *)data);
 		shader->Release();
 		return nullptr;
 	}
@@ -1539,7 +1542,6 @@ void VKContext::BindFramebufferAsRenderTarget(Framebuffer *fbo, const RenderPass
 	curFramebuffer_ = fb;
 }
 
-// color must be 0, for now.
 void VKContext::BindFramebufferAsTexture(Framebuffer *fbo, int binding, FBChannel channelBit, int attachment) {
 	VKFramebuffer *fb = (VKFramebuffer *)fbo;
 

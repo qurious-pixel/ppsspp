@@ -19,12 +19,17 @@ inline bool ShaderLanguageIsOpenGL(ShaderLanguage lang) {
 	return lang == GLSL_1xx || lang == GLSL_3xx;
 }
 
+const char *ShaderLanguageAsString(ShaderLanguage lang);
+
 enum class ShaderStage {
 	Vertex,
 	Fragment,
 	Geometry,
 	Compute,
 };
+
+const char *ShaderStageAsString(ShaderStage lang);
+
 
 struct ShaderLanguageDesc {
 	ShaderLanguageDesc() {}
@@ -50,6 +55,7 @@ struct ShaderLanguageDesc {
 	bool bitwiseOps = false;
 	bool forceMatrix4x4 = false;
 	bool coefsFromBuffers = false;
+	char driverInfo[128];  // Really only GL uses this.
 };
 
 enum class UniformType : int8_t {
