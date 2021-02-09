@@ -20,6 +20,8 @@ on:
 
 env:
   BUILD_CONFIGURATION: Release
+  DEFAULT_BRANCH: actions
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
@@ -96,7 +98,5 @@ jobs:
             tar xfv ghr_v0.13.0_linux_amd64.tar.gz      
             ghr_v0.13.0_linux_amd64/ghr -recreate -n 'v1.11' -b "v1.11" v1.11 Artifacts/
     
-env:
-          DEFAULT_BRANCH: actions
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
