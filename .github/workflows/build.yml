@@ -32,7 +32,7 @@ jobs:
           cc: gcc
           cxx: g++
           #args: ./b.sh --qt
-          args: ./b.sh --headless
+          args: ./b.sh
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
@@ -90,9 +90,11 @@ jobs:
         realpath ./build && ls -al ./build
         realpath Artifacts && ls -al Artifacts 
     - name: Upload build
-      uses: actions/upload-artifact@v1
-      with:
-        name: ${{ matrix.os }} build
-        path: Artifacts/
+      run: |
+            ls -al artifacts/
+            wget -c https://github.com/tcnksm/ghr/releases/download/v0.13.0/ghr_v0.13.0_linux_amd64.tar.gz
+            tar xfv ghr_v0.13.0_linux_amd64.tar.gz      
+            ghr_v0.13.0_linux_amd64/ghr -recreate -n 'v1.11' -b "v1.11" v1.11 artifacts/
+    
 
 
