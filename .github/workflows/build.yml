@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-    - master
+    - actions
     paths-ignore:
     - '*.{txt,md}'
     - 'Tools/**'
