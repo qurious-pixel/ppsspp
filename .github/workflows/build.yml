@@ -72,12 +72,12 @@ jobs:
       #if: matrix.extra == 'test'
       run: |
         mkdir Artifacts
-        if [ -e build*/$BUILD_CONFIGURATION/PPSSPPSDL ]; then
-          cp build*/$BUILD_CONFIGURATION/PPSSPPSDL Artifacts/
+        if [ -e build*/$BUILD_CONFIGURATION/PPSSPP* ]; then
+          cp build*/$BUILD_CONFIGURATION/PPSSPP* Artifacts/
         elif [ -e build*/PPSSPPSDL.app ]; then
           cp -r build*/PPSSPPSDL.app Artifacts/
-        elif [ -e build*/PPSSPPSDL ]; then
-          cp build*/PPSSPPSDL Artifacts/
+        elif [ -e build*/PPSSPP* ]; then
+          cp build*/PPSSPP* Artifacts/
           cp -r assets Artifacts/assets
         fi
         if [ -e build*/$BUILD_CONFIGURATION/PPSSPPHeadless ]; then
