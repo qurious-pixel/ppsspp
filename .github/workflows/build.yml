@@ -85,7 +85,8 @@ jobs:
         elif [ -e build*/PPSSPPHeadless ]; then
           cp build*/PPSSPPHeadless ppsspp/
         fi
-        ls -al ppsspp/ && realpath ppsspp/
+        ls -al . && realpath .
+        ls -al ./build
     - name: Upload build
       uses: actions/upload-artifact@v1
       with:
