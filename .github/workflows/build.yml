@@ -81,7 +81,8 @@ jobs:
           cp -r build/PPSSPPSDL.app Artifacts/
         elif [ -e build/PPSSPP* ]; then
           cp build/PPSSPP* Artifacts/
-          cp -r assets Artifacts/assets
+          7z a assets.zip build/assets 
+          cp assets.zip Artifacts/
         fi
         if [ -e build/$BUILD_CONFIGURATION/PPSSPPHeadless ]; then
           cp build/$BUILD_CONFIGURATION/PPSSPPHeadless Artifacts/
