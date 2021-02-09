@@ -71,26 +71,27 @@ jobs:
     - name: Package build
       #if: matrix.extra == 'test'
       run: |
-        mkdir ppsspp
+        mkdir Artifacts
         if [ -e build*/$BUILD_CONFIGURATION/PPSSPPSDL ]; then
-          cp build*/$BUILD_CONFIGURATION/PPSSPPSDL ppsspp/
+          cp build*/$BUILD_CONFIGURATION/PPSSPPSDL Artifacts/
         elif [ -e build*/PPSSPPSDL.app ]; then
-          cp -r build*/PPSSPPSDL.app ppsspp/
+          cp -r build*/PPSSPPSDL.app Artifacts/
         elif [ -e build*/PPSSPPSDL ]; then
-          cp build*/PPSSPPSDL ppsspp/
-          cp -r assets ppsspp/assets
+          cp build*/PPSSPPSDL Artifacts/
+          cp -r assets Artifacts/assets
         fi
         if [ -e build*/$BUILD_CONFIGURATION/PPSSPPHeadless ]; then
-          cp build*/$BUILD_CONFIGURATION/PPSSPPHeadless ppsspp/
+          cp build*/$BUILD_CONFIGURATION/PPSSPPHeadless Artifacts/
         elif [ -e build*/PPSSPPHeadless ]; then
-          cp build*/PPSSPPHeadless ppsspp/
+          cp build*/PPSSPPHeadless Artifacts/
         fi
-        ls -al . && realpath .
-        ls -al ./build
+        realpath . && ls -al .  
+        realpath ./build && ls -al ./build
+        realpath Artifacts && ls -al Artifacts 
     - name: Upload build
       uses: actions/upload-artifact@v1
       with:
         name: ${{ matrix.os }} build
-        path: ppsspp/
+        path: Artifacts/
 
 
