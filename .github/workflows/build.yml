@@ -28,10 +28,11 @@ jobs:
       matrix:
         include:
         - os: ubuntu-latest
-          extra: qt
+          #extra: qt
           cc: gcc
           cxx: g++
-          args: ./b.sh --qt
+          #args: ./b.sh --qt
+          args: ./b.sh --headless
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
