@@ -72,18 +72,18 @@ jobs:
       #if: matrix.extra == 'test'
       run: |
         mkdir Artifacts
-        if [ -e build*/$BUILD_CONFIGURATION/PPSSPP* ]; then
-          cp build*/$BUILD_CONFIGURATION/PPSSPP* Artifacts/
-        elif [ -e build*/PPSSPPSDL.app ]; then
-          cp -r build*/PPSSPPSDL.app Artifacts/
-        elif [ -e build*/PPSSPP* ]; then
-          cp build*/PPSSPP* Artifacts/
+        if [ -e build/$BUILD_CONFIGURATION/PPSSPP* ]; then
+          cp build/$BUILD_CONFIGURATION/PPSSPP* Artifacts/
+        elif [ -e build/PPSSPPSDL.app ]; then
+          cp -r build/PPSSPPSDL.app Artifacts/
+        elif [ -e build/PPSSPP* ]; then
+          cp build/PPSSPP* Artifacts/
           cp -r assets Artifacts/assets
         fi
-        if [ -e build*/$BUILD_CONFIGURATION/PPSSPPHeadless ]; then
-          cp build*/$BUILD_CONFIGURATION/PPSSPPHeadless Artifacts/
-        elif [ -e build*/PPSSPPHeadless ]; then
-          cp build*/PPSSPPHeadless Artifacts/
+        if [ -e build/$BUILD_CONFIGURATION/PPSSPPHeadless ]; then
+          cp build/$BUILD_CONFIGURATION/PPSSPPHeadless Artifacts/
+        elif [ -e build/PPSSPPHeadless ]; then
+          cp build/PPSSPPHeadless Artifacts/
         fi
         realpath . && ls -al .  
         realpath ./build && ls -al ./build
