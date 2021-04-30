@@ -4,10 +4,10 @@ BRANCH=`echo ${GITHUB_REF##*/}`
 PROGRAM=PPSSPP
 
 mkdir -p AppDir/usr/bin
-cp build/PPSSPPSDL AppDir/usr/bin/
+cp build/PPSSPPSDL AppDir/usr/bin/$PROGRAM
 cp -r build/assets/ AppDir/usr/bin/
 cp icons/icon-512.svg AppDir/$PROGRAM.svg
-cp Qt/PPSSPP.desktop AppDir/$PROGRAM.desktop
+cp ../ppsspp2/.github/scripts/PPSSPP.desktop AppDir/$PROGRAM.desktop
 cp ../ppsspp2/.github/scripts/update.sh AppDir/update.sh
 cp ../ppsspp2/.github/scripts/AppRun AppDir/AppRun
 curl -sL https://github.com/AppImage/AppImageKit/releases/download/continuous/AppRun-x86_64 -o AppDir/AppRun-patched
