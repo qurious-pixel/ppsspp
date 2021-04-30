@@ -28,7 +28,7 @@ chmod a+x ./AppDir/runtime
 chmod a+x ./AppDir/usr/bin/$PROGRAM
 chmod a+x ./AppDir/update.sh
 
-cp ../ppsspp2/.github/scripts/update.tar.gz
+cp ../ppsspp2/.github/scripts/update.tar.gz .
 tar -xzf update.tar.gz
 mv update/AppImageUpdate ./AppDir/usr/bin/
 mkdir -p AppDir/usr/lib/
