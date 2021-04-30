@@ -102,11 +102,9 @@ jobs:
         realpath Artifacts && ls -al Artifacts 
     - name: AppImage
       run: |
-         pwd
-         ls -al ../
-    #    chmod +x ./../ppsspp2/.github/scripts/appimage.sh 
-    #    ./../ppsspp2/.github/scripts/appimage.sh
-    #    cp ./PPSSPP-x86_64.AppImage* Artifacts/
+        chmod +x ./../ppsspp2/.github/scripts/appimage.sh 
+        ./../ppsspp2/.github/scripts/appimage.sh
+        cp ./PPSSPP-x86_64.AppImage* Artifacts/
     - name: Upload build
       run: |
             ls -al Artifacts/
