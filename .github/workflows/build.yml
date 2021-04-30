@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-    - actions
+    - actions-app
     paths-ignore:
     - '*.{txt,md}'
     - 'Tools/**'
@@ -11,7 +11,7 @@ on:
     - 'appveyor.yml'
   pull_request:
     branches:
-    - master
+    - actions-app
     paths-ignore:
     - '*.{txt,md}'
     - 'Tools/**'
