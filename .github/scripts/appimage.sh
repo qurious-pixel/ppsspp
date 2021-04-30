@@ -4,12 +4,12 @@ BRANCH=`echo ${GITHUB_REF##*/}`
 PROGRAM=PPSSPP
 
 mkdir -p AppDir/usr/bin
-cp ppsspp/build/PPSSPPSDL AppDir/usr/bin/
-cp -r ppsspp/build/assets/ AppDir/usr/bin/
-cp ppsspp/icons/icon-512.svg AppDir/$PROGRAM.svg
-cp ppsspp/Qt/PPSSPP.desktop -o AppDir/$PROGRAM.desktop
-cp ppsspp2/.github/scripts/update.sh -o AppDir/update.sh
-cp ppsspp2/.github/scripts/AppRun -o AppDir/AppRun
+cp build/PPSSPPSDL AppDir/usr/bin/
+cp -r build/assets/ AppDir/usr/bin/
+cp icons/icon-512.svg AppDir/$PROGRAM.svg
+cp Qt/PPSSPP.desktop -o AppDir/$PROGRAM.desktop
+cp ../ppsspp2/.github/scripts/update.sh -o AppDir/update.sh
+cp ../ppsspp2/.github/scripts/AppRun -o AppDir/AppRun
 curl -sL https://github.com/AppImage/AppImageKit/releases/download/continuous/AppRun-x86_64 -o AppDir/AppRun-patched
 curl -sL https://github.com/AppImage/AppImageKit/releases/download/continuous/runtime-x86_64 -o ./AppDir/runtime
 mkdir -p AppDir/usr/share/applications && cp ./AppDir/$PROGRAM.desktop ./AppDir/usr/share/applications
@@ -28,7 +28,7 @@ chmod a+x ./AppDir/runtime
 chmod a+x ./AppDir/usr/bin/$PROGRAM
 chmod a+x ./AppDir/update.sh
 
-cp ppsspp2/.github/scripts/update.tar.gz
+cp ../ppsspp2/.github/scripts/update.tar.gz
 tar -xzf update.tar.gz
 mv update/AppImageUpdate ./AppDir/usr/bin/
 mkdir -p AppDir/usr/lib/
