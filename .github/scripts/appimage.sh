@@ -39,7 +39,10 @@ echo $GITHUB_RUN_ID > ./AppDir/version.txt
 
 ls -al ./AppDir
 
-wget "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
-chmod a+x appimagetool-x86_64.AppImage
-./appimagetool-x86_64.AppImage --appimage-extract
-squashfs-root/AppRun AppDir/ -u "gh-releases-zsync|qurious-pixel|$PROGRAM|continuous|$PROGRAM-x86_64.AppImage.zsync"
+curl -sLO "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+chmod a+x linuxdeploy*.AppImage
+./linuxdeploy-x86_64.AppImage --appimage-extract
+export UPD_INFO="gh-releases-zsync|qurious-pixel|$PROGRAM|continuous|$PROGRAM-x86_64.AppImage.zsync"
+export OUTPUT=$PROGRAM-x86_64.AppImage
+squashfs-root/AppRun --appdir=./AppDir/ -d ./AppDir/$PROGRAM.desktop -i ./AppDir/$PROGRAM.svg --output appimage
+
