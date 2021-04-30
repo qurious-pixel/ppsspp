@@ -102,15 +102,16 @@ jobs:
         realpath Artifacts && ls -al Artifacts 
     - name: AppImage
       run: |
-        chmod +x ./../ppsspp2/.github/scripts/appimage.sh 
-        ./../ppsspp2/.github/scripts/appimage.sh
-        cp ./PPSSPP-x86_64.AppImage* Artifacts/
+         pwd
+    #    chmod +x ./../ppsspp2/.github/scripts/appimage.sh 
+    #    ./../ppsspp2/.github/scripts/appimage.sh
+    #    cp ./PPSSPP-x86_64.AppImage* Artifacts/
     - name: Upload build
       run: |
             ls -al Artifacts/
             wget -c https://github.com/tcnksm/ghr/releases/download/v0.13.0/ghr_v0.13.0_linux_amd64.tar.gz
             tar xfv ghr_v0.13.0_linux_amd64.tar.gz      
-            ghr_v0.13.0_linux_amd64/ghr -recreate -n 'v1.11' -b "v1.11" v1.11 Artifacts/
+            ghr_v0.13.0_linux_amd64/ghr -recreate -n 'Continuous build' -b "GitHub https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" continuous Artifacts/
     
   
 
