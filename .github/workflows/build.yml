@@ -20,7 +20,7 @@ on:
 
 env:
   BUILD_CONFIGURATION: Release
-  DEFAULT_BRANCH: actions
+  DEFAULT_BRANCH: actions-app
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
           cc: gcc
           cxx: g++
           #args: ./b.sh --qt
-          #args: ./b.sh
+          args: ./b.sh
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
