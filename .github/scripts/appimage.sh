@@ -7,9 +7,9 @@ mkdir -p AppDir/usr/bin
 cp build/PPSSPPSDL AppDir/usr/bin/
 cp -r build/assets/ AppDir/usr/bin/
 cp icons/icon-512.svg AppDir/$PROGRAM.svg
-cp Qt/PPSSPP.desktop -o AppDir/$PROGRAM.desktop
-cp ../ppsspp2/.github/scripts/update.sh -o AppDir/update.sh
-cp ../ppsspp2/.github/scripts/AppRun -o AppDir/AppRun
+cp Qt/PPSSPP.desktop AppDir/$PROGRAM.desktop
+cp ../ppsspp2/.github/scripts/update.sh AppDir/update.sh
+cp ../ppsspp2/.github/scripts/AppRun AppDir/AppRun
 curl -sL https://github.com/AppImage/AppImageKit/releases/download/continuous/AppRun-x86_64 -o AppDir/AppRun-patched
 curl -sL https://github.com/AppImage/AppImageKit/releases/download/continuous/runtime-x86_64 -o ./AppDir/runtime
 mkdir -p AppDir/usr/share/applications && cp ./AppDir/$PROGRAM.desktop ./AppDir/usr/share/applications
