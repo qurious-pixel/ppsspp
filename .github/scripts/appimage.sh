@@ -4,7 +4,7 @@ BRANCH=`echo ${GITHUB_REF##*/}`
 PROGRAM=PPSSPP
 
 mkdir -p AppDir/usr/bin
-cp ppsspp/PPSSPPSDL AppDir/usr/bin/
+cp ppsspp/build/PPSSPPSDL AppDir/usr/bin/
 cp -r ppsspp/build/assets/ AppDir/usr/bin/
 cp ppsspp/icons/icon-512.svg AppDir/$PROGRAM.svg
 cp ppsspp/Qt/PPSSPP.desktop -o AppDir/$PROGRAM.desktop
