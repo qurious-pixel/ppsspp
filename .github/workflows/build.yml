@@ -55,7 +55,7 @@ jobs:
             build-ccache-
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
-      if: matrix.extra == 'qt'
+      #if: matrix.extra == 'qt'
 
     - name: Install Linux dependencies
       if: runner.os == 'Linux' && matrix.extra != 'android'
