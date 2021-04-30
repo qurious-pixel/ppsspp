@@ -103,6 +103,7 @@ jobs:
     - name: AppImage
       run: |
          pwd
+         ls -al ../
     #    chmod +x ./../ppsspp2/.github/scripts/appimage.sh 
     #    ./../ppsspp2/.github/scripts/appimage.sh
     #    cp ./PPSSPP-x86_64.AppImage* Artifacts/
@@ -111,7 +112,7 @@ jobs:
             ls -al Artifacts/
             wget -c https://github.com/tcnksm/ghr/releases/download/v0.13.0/ghr_v0.13.0_linux_amd64.tar.gz
             tar xfv ghr_v0.13.0_linux_amd64.tar.gz      
-            ghr_v0.13.0_linux_amd64/ghr -recreate -n 'Continuous build' -b "GitHub https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" continuous Artifacts/
+            ghr_v0.13.0_linux_amd64/ghr -u qurious-pixel -r ppsspp -recreate -n 'Continuous build' -b "GitHub https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" continuous Artifacts/
     
   
 
