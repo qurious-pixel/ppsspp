@@ -17,6 +17,7 @@ on:
     - 'Tools/**'
     - '.{editorconfig,gitattributes,gitignore}'
     - 'appveyor.yml'
+  workflow_dispatch: 
 
 env:
   BUILD_CONFIGURATION: Release
