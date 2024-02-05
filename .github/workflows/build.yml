@@ -119,7 +119,7 @@ jobs:
             ls -al Artifacts/
             wget -c https://github.com/tcnksm/ghr/releases/download/v0.16.0/ghr_v0.16.0_linux_amd64.tar.gz
             tar xfv ghr_v0.16.0_linux_amd64.tar.gz      
-            ghr_v0.16.0_linux_amd64/ghr -u qurious-pixel -r ppsspp -recreate -n 'Continuous build' -b "v1.16.6" continuous Artifacts/
+            ghr_v0.16.0_linux_amd64/ghr -u qurious-pixel -r ppsspp -recreate -n 'Continuous build' -b "v1.17.1" continuous Artifacts/
     
   
 
