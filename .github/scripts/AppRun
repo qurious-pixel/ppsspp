@@ -6,9 +6,9 @@ GITVER=$(wget -qO- https://www.github.com/qurious-pixel/PPSSPP/releases/tag/cont
 APPVER=$(cat $APPDIR/version.txt)
 
 if [[ -z "$GITVER" ]]; then
-	$APPDIR/AppRun-patched 
+	$APPDIR/AppRun-patched "$@"
 elif [ "$GITVER" = "$APPVER" ]; then
-	$APPDIR/AppRun-patched 
+	$APPDIR/AppRun-patched "$@"
 else
-	$APPDIR/update.sh
+	$APPDIR/update.sh "$@"
 fi
