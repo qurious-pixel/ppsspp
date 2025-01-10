@@ -9,13 +9,13 @@ else
 	answer=$?
 fi
 
-echo "GAMEPATH '${GAMEPATH}'"
+echo "GAMEPATH '$@'"
 
 if [ "$answer" -eq 0 ]; then 
-	$APPDIR/usr/bin/AppImageUpdate "$PWD/PPSSPP-x86_64.AppImage" && "$PWD/PPSSPP-x86_64.AppImage" "${GAMEPATH}" "$@"
+	$APPDIR/usr/bin/AppImageUpdate "$PWD/PPSSPP-x86_64.AppImage" && "$PWD/PPSSPP-x86_64.AppImage" "$@"
 elif [ "$answer" -eq 1 ]; then
-	$APPDIR/AppRun-patched "${GAMEPATH}" "$@"
+	$APPDIR/AppRun-patched "$@"
 else 
-	$APPDIR/AppRun-patched "${GAMEPATH}" "$@"
+	$APPDIR/AppRun-patched "$@"
 fi
 exit 0
