@@ -17,7 +17,7 @@ mkdir -p AppDir/usr/share/icons && cp ./AppDir/$PROGRAM.svg ./AppDir/usr/share/i
 mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps && cp ./AppDir/$PROGRAM.svg ./AppDir/usr/share/icons/hicolor/scalable/apps
 mkdir -p AppDir/usr/share/pixmaps && cp ./AppDir/$PROGRAM.svg ./AppDir/usr/share/pixmaps
 mkdir -p AppDir/usr/share/zenity 
-cp /usr/share/zenity/zenity.ui ./AppDir/usr/share/zenity/
+#cp /usr/share/zenity/zenity.ui ./AppDir/usr/share/zenity/
 cp /usr/bin/zenity ./AppDir/usr/bin/
 cp /usr/bin/realpath ./AppDir/usr/bin/
 
